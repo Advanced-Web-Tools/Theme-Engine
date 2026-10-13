@@ -29,7 +29,8 @@ final class LayoutBuilder
             $body[] = $this->slot('footer', $slots['footer'], $namespace);
         }
 
-        $stylesheets = array_unique(array_merge(['/dashboard/customization/layout.css'], $stylesheets));
+        // Public pages must load base styles without constructing an authenticated dashboard controller.
+        $stylesheets = array_unique(array_merge(['/awt_packages/ThemeEngine/assets/layout.css'], $stylesheets));
         $head = [
             self::block('meta', '', ['charset' => 'utf-8'], [], $namespace . '/layout/meta'),
             self::block('title', $title, [], [], $namespace . '/layout/title'),
