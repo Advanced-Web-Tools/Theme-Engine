@@ -162,9 +162,13 @@ Device controls resize the frame without reloading its route:
 | Tablet | 768 × 1024 pixels. |
 | Mobile | 390 × 844 pixels. |
 
-Oversized frames can be scrolled horizontally. The separate preview window starts at the selected device size and has floating controls at the bottom, with dimensions centered below the buttons. Controls sit outside the theme frame, so preview navigation retains the panel and selected size.
+Oversized frames can be scrolled horizontally. The separate preview window starts at the selected device size and has connected, icon-only 48-pixel size buttons stacked at the bottom right. Only the stack's outer top and bottom corners are rounded. Hover titles identify each device; the stack has no visible container or dimensions label. Controls sit outside the theme frame, so preview navigation retains the controls and selected size.
 
-On screens up to 1024 pixels wide or with a coarse pointer, switching is disabled and the preview fills the available screen. The dimensions label updates as the frame resizes.
+The standalone window also has an icon-only Font Awesome settings button at the bottom left. It opens an animated floating popup with Theme settings, Layout, and Presets tabs, using the same forms as the dashboard. Layout includes theme defaults and individual page overrides. Changes take effect after Save or Apply and reload the current route inside the frame. Saving one form preserves unsaved changes in other forms; closing the popup also retains them. Applying a preset or restoring defaults asks before replacing unsaved edits. The popup supports keyboard tab navigation, Escape to close, light/dark appearance, and reduced motion.
+
+The popup uses authenticated `/dashboard/customization/themes/{package_id}/preview-settings` and POST `/dashboard/customization/themes/{package_id}/preview-settings/save` endpoints. Saves retain the existing CSRF protection and schema validation, with the route determining the theme being edited.
+
+On screens up to 1024 pixels wide or with a coarse pointer, switching is disabled and the preview fills the available screen. The embedded dashboard preview's dimensions label updates as its frame resizes.
 
 ### Appearance and unsaved changes
 

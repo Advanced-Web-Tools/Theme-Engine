@@ -61,7 +61,7 @@
         const restrictedScreen = window.matchMedia('(max-width: 1024px), (pointer: coarse)');
 
         const updateSize = () => {
-            previewSize.textContent = `${frame.clientWidth} × ${frame.clientHeight}`;
+            if (previewSize) previewSize.textContent = `${frame.clientWidth} × ${frame.clientHeight}`;
         };
         const updateOpenLink = () => {
             if (!openLink || openLink.getAttribute('aria-disabled') === 'true') return;
@@ -82,7 +82,9 @@
         const updateScreen = () => {
             buttons.forEach(button => {
                 button.disabled = restrictedScreen.matches;
-                button.title = restrictedScreen.matches ? 'Preview follows your screen on tablets and phones.' : '';
+                const label = button.getAttribute('aria-label') || `${button.dataset.previewDevice[0].toUpperCase()}${button.dataset.previewDevice.slice(1)} preview`;
+                button.title = restrictedScreen.matches
+                    ? `${label}: Preview follows your screen on tablets and phones.` : label;
             });
             applyDevice(restrictedScreen.matches ? 'desktop' : currentDevice);
         };
@@ -92,9 +94,176 @@
             });
         });
         restrictedScreen.addEventListener('change', updateScreen);
-        window.addEventListener('resize', updateSize);
-        new ResizeObserver(updateSize).observe(frame);
+        if (previewSize) {
+            window.addEventListener('resize', updateSize);
+            new ResizeObserver(updateSize).observe(frame);
+        }
         updateScreen();
+    }
+
+    function initializePreviewSettings() {
+        const popup = document.getElementById('theme-preview-settings-popup');
+        const toggle = document.getElementById('theme-preview-settings-toggle');
+        if (!popup || !toggle) return;
+
+        const body = popup.querySelector('[data-preview-settings-body]');
+        const status = popup.querySelector('[role="status"]');
+        const frame = document.querySelector('.theme-preview-device iframe');
+        const snapshots = new WeakMap();
+        let activeTab = 'settings';
+        let loaded = false;
+        let busy = false;
+        const snapshot = form => JSON.stringify([...new FormData(form).entries()]);
+        const formKey = form => ['operation', 'page_key', 'preset_id']
+            .map(name => form.elements.namedItem(name)?.value || '').join(':');
+        const dirtyForms = () => [...body.querySelectorAll('form')]
+            .filter(form => snapshots.has(form) && snapshot(form) !== snapshots.get(form));
+        const selectTab = (tab, focus = false) => {
+            activeTab = tab;
+            body.querySelectorAll('[data-preview-tab]').forEach(button => {
+                const selected = button.dataset.previewTab === tab;
+                button.setAttribute('aria-selected', String(selected));
+                button.tabIndex = selected ? 0 : -1;
+                if (selected && focus) button.focus();
+            });
+            body.querySelectorAll('[data-preview-panel]').forEach(panel => {
+                panel.hidden = panel.dataset.previewPanel !== tab;
+            });
+        };
+        const install = (html, preserved = []) => {
+            const template = document.createElement('template');
+            template.innerHTML = html;
+            if (!template.content.querySelector('[data-preview-panel="settings"]')) {
+                throw new Error('Unable to load theme settings. Reload the preview and sign in if needed.');
+            }
+            // Saving one form must not discard edits in another tab or page override.
+            template.content.querySelectorAll('form').forEach(form => {
+                const previous = preserved.find(candidate => formKey(candidate) === formKey(form));
+                if (previous) form.replaceWith(previous);
+                else snapshots.set(form, snapshot(form));
+            });
+            body.replaceChildren(template.content);
+            selectTab(activeTab);
+            loaded = true;
+        };
+        const request = async options => {
+            const response = await fetch(popup.dataset.settingsUrl + (options ? '/save' : ''), {
+                credentials: 'same-origin', ...options,
+            });
+            if (response.redirected) throw new Error('Reload the preview and sign in to edit theme settings.');
+            const html = await response.text();
+            if (!response.ok) throw new Error(html || 'Unable to save theme settings.');
+            return html;
+        };
+        const setOpen = async open => {
+            popup.classList.toggle('is-open', open);
+            popup.inert = !open;
+            toggle.setAttribute('aria-expanded', String(open));
+            if (!open) {
+                if (popup.contains(document.activeElement)) toggle.focus();
+                return;
+            }
+            if (loaded) {
+                selectTab(activeTab, true);
+                return;
+            }
+            if (busy) return;
+            busy = true;
+            popup.setAttribute('aria-busy', 'true');
+            status.textContent = 'Loading theme settings…';
+            try {
+                install(await request());
+                status.textContent = 'Changes update the preview after saving.';
+                if (toggle.getAttribute('aria-expanded') === 'true') selectTab(activeTab, true);
+            } catch (error) {
+                status.textContent = error.message;
+            } finally {
+                busy = false;
+                popup.removeAttribute('aria-busy');
+            }
+        };
+        toggle.addEventListener('click', () => setOpen(toggle.getAttribute('aria-expanded') !== 'true'));
+        popup.querySelector('[data-preview-settings-close]').addEventListener('click', () => setOpen(false));
+        document.addEventListener('click', event => {
+            if (!popup.contains(event.target) && !toggle.contains(event.target)) setOpen(false);
+        });
+        document.addEventListener('keydown', event => {
+            if (event.key === 'Escape' && toggle.getAttribute('aria-expanded') === 'true') {
+                setOpen(false);
+                toggle.focus();
+            }
+        });
+        body.addEventListener('click', event => {
+            const tab = event.target.closest('[data-preview-tab]');
+            if (tab) selectTab(tab.dataset.previewTab);
+        });
+        body.addEventListener('keydown', event => {
+            if (!event.target.matches('[data-preview-tab]')) return;
+            const tabs = [...body.querySelectorAll('[data-preview-tab]')];
+            const index = tabs.indexOf(event.target);
+            const next = {ArrowRight: (index + 1) % tabs.length, ArrowLeft: (index + tabs.length - 1) % tabs.length,
+                Home: 0, End: tabs.length - 1}[event.key];
+            if (next === undefined) return;
+            event.preventDefault();
+            selectTab(tabs[next].dataset.previewTab, true);
+        });
+        const updateDirty = event => {
+            const form = event.target.closest('form');
+            if (form) form.classList.toggle('has-unsaved-changes', snapshot(form) !== snapshots.get(form));
+            if (!busy) status.textContent = dirtyForms().length
+                ? 'Unsaved changes. Save to update the preview.' : 'Changes update the preview after saving.';
+        };
+        body.addEventListener('input', updateDirty);
+        body.addEventListener('change', updateDirty);
+        body.addEventListener('submit', async event => {
+            event.preventDefault();
+            if (busy) return;
+            const form = event.target;
+            const operation = form.elements.namedItem('operation').value;
+            const replaces = candidate => operation === 'preset_apply'
+                || (operation === 'reset_settings' && candidate.elements.namedItem('operation')?.value === 'settings');
+            if (dirtyForms().some(replaces) && !window.confirm('This will replace your unsaved changes. Continue?')) return;
+            const submitted = snapshot(form);
+            const data = new URLSearchParams(new FormData(form));
+            busy = true;
+            body.inert = true;
+            popup.setAttribute('aria-busy', 'true');
+            status.textContent = 'Saving…';
+            const buttons = [...body.querySelectorAll('button[type="submit"]')];
+            buttons.forEach(button => { button.disabled = true; });
+            try {
+                const html = await request({method: 'POST', body: data});
+                const preserved = dirtyForms().filter(candidate => !replaces(candidate)
+                    && (candidate !== form || snapshot(candidate) !== submitted));
+                install(html, preserved);
+                body.inert = false;
+                body.querySelectorAll('button[type="submit"]').forEach(button => { button.disabled = false; });
+                status.textContent = dirtyForms().length ? 'Saved. Other changes are still unsaved.' : 'Saved.';
+                if (['settings', 'reset_settings', 'layout', 'page', 'preset_apply'].includes(operation)) {
+                    // Keep the route reached inside the frame, including its parameters and fragment.
+                    try { frame.contentWindow.location.reload(); }
+                    catch (_) { frame.src = frame.src; }
+                }
+                const savedForm = [...body.querySelectorAll('form')].find(candidate => formKey(candidate) === formKey(form));
+                if (toggle.getAttribute('aria-expanded') === 'true') {
+                    (savedForm?.querySelector('button[type="submit"]') || body.querySelector('[aria-selected="true"]'))?.focus();
+                }
+            } catch (error) {
+                status.textContent = error.message;
+            } finally {
+                buttons.forEach(button => { button.disabled = false; });
+                // Preserved forms may carry disabled buttons into the refreshed content.
+                body.querySelectorAll('button[type="submit"]').forEach(button => { button.disabled = false; });
+                busy = false;
+                body.inert = false;
+                popup.removeAttribute('aria-busy');
+            }
+        });
+        window.addEventListener('beforeunload', event => {
+            if (!dirtyForms().length) return;
+            event.preventDefault();
+            event.returnValue = '';
+        });
     }
 
     function initializeUnsavedChanges() {
@@ -158,5 +327,6 @@
     initializeAppearanceSync();
     initializeImageFallbacks();
     initializePreview();
+    initializePreviewSettings();
     initializeUnsavedChanges();
 })();

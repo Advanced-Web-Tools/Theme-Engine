@@ -16,6 +16,7 @@ use ThemeEngine\service\customization\CustomizationInput;
 use ThemeEngine\service\customization\CustomizationUrls;
 use ThemeEngine\service\customization\CustomizationViewData;
 use ThemeEngine\service\preview\PreviewRenderer;
+use ThemeEngine\service\preview\PreviewSettings;
 use view\View;
 
 /** HTTP boundary for the customization dashboard; theme behavior lives in services. */
@@ -128,6 +129,32 @@ final class CustomizationController extends DashboardControllerBase
             ->asHtml()
             ->header('Cache-Control', 'no-store')
             ->header('Content-Security-Policy', "frame-ancestors 'self'");
+    }
+
+    public function previewSettings(array|string $params = []): Response
+    {
+        return $this->previewSettingsResponse($params, false);
+    }
+
+    public function savePreviewSettings(array|string $params = []): Response
+    {
+        // POST and CSRF are enforced by the router, just like dashboard saves.
+        return $this->previewSettingsResponse($params, true);
+    }
+
+    private function previewSettingsResponse(array|string $params, bool $save): Response
+    {
+        try {
+            $packageId = CustomizationInput::themeId($params);
+            $settings = new PreviewSettings($this->themeEngine, $this->rootDirPath . '/views');
+            if ($save) {
+                $settings->save($packageId, $_POST);
+            }
+            return Response::make()->file($settings->render($packageId))->asHtml()->header('Cache-Control', 'no-store');
+        } catch (\InvalidArgumentException|\OutOfBoundsException|\LogicException|\UnexpectedValueException $exception) {
+            return Response::make($exception instanceof \OutOfBoundsException ? 404 : 422)
+                ->file($exception->getMessage())->asText()->header('Cache-Control', 'no-store');
+        }
     }
 
     // Keep existing controller actions and route names stable for callers and cached pages.

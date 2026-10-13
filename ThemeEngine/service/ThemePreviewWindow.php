@@ -11,7 +11,7 @@ final class ThemePreviewWindow
         'mobile' => [390, 844],
     ];
 
-    public function render(string $themeName, string $previewUrl, string $device = 'desktop'): string
+    public function render(string $themeName, string $previewUrl, string $device = 'desktop', ?string $settingsUrl = null): string
     {
         if (!isset(self::DEVICES[$device])) {
             throw new \InvalidArgumentException('Unknown preview device size.');
@@ -19,9 +19,9 @@ final class ThemePreviewWindow
         [$width, $height] = self::DEVICES[$device];
         $widthCss = is_int($width) ? $width . 'px' : $width;
         $heightCss = is_int($height) ? $height . 'px' : $height;
-        $size = $device === 'desktop' ? 'Full size' : $width . ' × ' . $height;
         $title = htmlspecialchars($themeName . ' · Preview', ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
         $url = htmlspecialchars($previewUrl, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
+        $settingsUrl = $settingsUrl === null ? null : htmlspecialchars($settingsUrl, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
         $devices = self::DEVICES;
         $icons = ['desktop' => 'desktop', 'tablet' => 'tablet-screen-button', 'mobile' => 'mobile-screen-button'];
 
