@@ -1,0 +1,26 @@
+{
+  "name": "ThemeEngine",
+  "version": "1.0.0",
+  "minimum_awt_version": "27.0.0",
+  "maximum_awt_version": null,
+  "author": "ElStefanos",
+  "type": 1,
+  "system_package": 1,
+  "description": "Explore, preview, and personalize themes for your AWT site. Customize layouts and settings, save your favorite configurations, and switch themes from one dashboard.",
+  "icon": "icon.png",
+  "preview_image": "preview/preview.png",
+  "license": "MIT",
+  "license_url": "https://github.com/Advanced-Web-Tools/ThemeEngine/blob/main/LICENSE",
+  "dependencies": [
+    {
+      "name": "URPC",
+      "version": ">=1.0.0",
+      "url": "https://github.com/ElStefanos/URPC/releases/download/1.0.0/URPC-1.0.0.zip"
+    },
+    {
+      "name": "Dashboard",
+      "version": ">=1.0.0",
+      "url": "https://github.com/Advanced-Web-Tools/Dashboard/releases/download/1.0.0/Dashboard-1.0.0.zip"
+    }
+  ]
+}
