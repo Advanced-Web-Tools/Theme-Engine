@@ -1,0 +1,3 @@
+# Export only the package; exclude repository tooling, docs, and future root files.
+/* export-ignore
+/ThemeEngine -export-ignore
