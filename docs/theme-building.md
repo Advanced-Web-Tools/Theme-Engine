@@ -283,7 +283,7 @@ Shared JSON sources retain their source namespace across pages. IDs depend on so
 }
 ```
 
-The engine supplies layout structure and its base stylesheet. Your theme styles the five logical slots: `.te-header`, `.te-side_l`, `.te-content`, `.te-side_r`, and `.te-footer`, plus `.te-page`, `.te-row`, and `.te-section`.
+The engine supplies layout structure and its base stylesheet at `/awt_packages/ThemeEngine/assets/layout.css`. AWT serves this public package asset without dashboard authentication. Your theme styles the five logical slots: `.te-header`, `.te-side_l`, `.te-content`, `.te-side_r`, and `.te-footer`, plus `.te-page`, `.te-row`, and `.te-section`.
 
 AWT already provides a public package-resource URL for files in allowed asset directories. For this package, the file:
 

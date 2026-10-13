@@ -95,7 +95,7 @@ Themes style the layout through these hooks:
 - Variables: `--te-gap`, `--te-side-width`, `--te-max-width`.
 - Classes: `.te-page`, `.te-row`, `.te-section`, `.te-header`, `.te-footer`, `.te-content`, `.te-side_l`, `.te-side_r`.
 
-Stylesheet and script URLs from `ThemeDefinition` are deduplicated, with layout CSS loaded first. For package assets, supply public URLs such as `/awt_packages/StudioTheme/assets/theme.css`. AWT serves allowed resource directories and extensions; ThemeEngine adds the declared stylesheet and script URLs to the document.
+Stylesheet and script URLs from `ThemeDefinition` are deduplicated, with layout CSS loaded first from the public `/awt_packages/ThemeEngine/assets/layout.css` asset. Public rendering does not depend on the authenticated dashboard CSS endpoint. For package assets, supply public URLs such as `/awt_packages/StudioTheme/assets/theme.css`. AWT serves allowed resource directories and extensions; ThemeEngine adds the declared stylesheet and script URLs to the document.
 
 ## Events
 
