@@ -42,7 +42,8 @@ final class PreviewRenderer
         // The inner frame renders a page, not another standalone window.
         unset($query['window'], $query['device']);
         $url = CustomizationUrls::preview($packageId, $query);
-        return (new ThemePreviewWindow())->render($theme->name, $url, $device);
+        return (new ThemePreviewWindow())->render($theme->name, $url, $device,
+            '/dashboard/customization/themes/' . $packageId . '/preview-settings');
     }
 
     public static function errorHtml(\Throwable $exception): string

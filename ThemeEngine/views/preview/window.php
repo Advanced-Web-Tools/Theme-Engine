@@ -9,13 +9,21 @@
     <link rel="stylesheet" href="/dashboard/customization/themes.css">
 </head>
 <body class="theme-preview-window">
-    <div class="theme-preview-floating" aria-label="Preview controls">
-        <div class="theme-preview-controls" role="group" aria-label="Preview device size">
-            <?php foreach ($devices as $key => $_): ?>
-                <button class="btn btn-outline-primary" type="button" data-preview-device="<?= $key ?>" aria-pressed="<?= $device === $key ? 'true' : 'false' ?>"><i class="fa-solid fa-<?= $icons[$key] ?> fa-fw" aria-hidden="true"></i> <?= ucfirst($key) ?></button>
-            <?php endforeach; ?>
-        </div>
-        <div id="theme-preview-size" aria-live="polite"><?= $size ?></div>
+    <?php if ($settingsUrl !== null): ?>
+        <button id="theme-preview-settings-toggle" class="theme-preview-settings-launcher" type="button" aria-label="Theme settings" title="Theme settings" aria-expanded="false" aria-controls="theme-preview-settings-popup"><i class="fa-solid fa-sliders fa-fw" aria-hidden="true"></i></button>
+        <section id="theme-preview-settings-popup" class="theme-preview-settings-popup" aria-label="Theme customization" data-settings-url="<?= $settingsUrl ?>" inert>
+            <div class="theme-preview-settings-heading">
+                <strong>Theme customization</strong>
+                <button type="button" data-preview-settings-close aria-label="Close theme settings"><i class="fa-solid fa-xmark fa-fw" aria-hidden="true"></i></button>
+            </div>
+            <p class="theme-preview-settings-status" role="status" aria-live="polite"></p>
+            <div data-preview-settings-body></div>
+        </section>
+    <?php endif; ?>
+    <div class="theme-preview-floating" role="group" aria-label="Preview device size">
+        <?php foreach ($devices as $key => $_): ?>
+            <button type="button" data-preview-device="<?= $key ?>" aria-label="<?= ucfirst($key) ?> preview" title="<?= ucfirst($key) ?> preview" aria-pressed="<?= $device === $key ? 'true' : 'false' ?>"><i class="fa-solid fa-<?= $icons[$key] ?> fa-fw" aria-hidden="true"></i></button>
+        <?php endforeach; ?>
     </div>
     <div class="theme-preview-viewport">
         <div id="theme-preview-device" class="theme-preview-device" data-initial-device="<?= $device ?>" style="--preview-width:<?= $widthCss ?>;--preview-height:<?= $heightCss ?>">
