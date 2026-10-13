@@ -1,0 +1,109 @@
+name: Release ThemeEngine
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: write
+
+# Serialize version allocation and preserve queued pushes.
+concurrency:
+  group: themeengine-release
+  queue: max
+  cancel-in-progress: false
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out the pushed commit and all release tags
+        uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - name: Choose the next patch version and build the package ZIP
+        id: package
+        shell: bash
+        run: |
+          python3 <<'PY'
+          import io
+          import json
+          import os
+          import re
+          import subprocess
+          import zipfile
+          from pathlib import Path
+
+          def git(*args):
+              return subprocess.check_output(["git", *args], text=True).splitlines()
+
+          def parse_version(value):
+              if not re.fullmatch(r"(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)", value):
+                  raise ValueError(f"Version must be major.minor.patch: {value!r}")
+              return tuple(map(int, value.split(".")))
+
+          # Archiving the subtree places manifest.json/main.php at the ZIP root.
+          source = subprocess.check_output(["git", "archive", "--format=zip", "HEAD:ThemeEngine"])
+          with zipfile.ZipFile(io.BytesIO(source)) as package:
+              manifest = json.loads(package.read("manifest.json"))
+              baseline = parse_version(manifest["version"])
+              tags = {}
+              for tag in git("tag", "--list", "ThemeEngine-*"):
+                  try:
+                      tags[tag] = parse_version(tag.removeprefix("ThemeEngine-"))
+                  except ValueError:
+                      continue
+
+              # Re-running a failed job reuses its tag rather than allocating a new version.
+              existing = [tag for tag in git("tag", "--points-at", "HEAD") if tag in tags]
+              if existing:
+                  tag = max(existing, key=tags.get)
+                  version = tags[tag]
+              else:
+                  major, minor, patch = max([baseline, *tags.values()])
+                  version = (major, minor, patch + 1)
+                  tag = "ThemeEngine-" + ".".join(map(str, version))
+
+              manifest["version"] = ".".join(map(str, version))
+              Path("releases").mkdir(exist_ok=True)
+              archive = f"releases/{tag}.zip"
+              with zipfile.ZipFile(archive, "w", compression=zipfile.ZIP_DEFLATED) as output:
+                  for entry in package.infolist():
+                      data = package.read(entry.filename)
+                      if entry.filename == "manifest.json":
+                          data = (json.dumps(manifest, indent=2, ensure_ascii=False) + "\n").encode()
+                      output.writestr(entry, data)
+
+          with zipfile.ZipFile(archive) as output:
+              assert output.testzip() is None, "Corrupt package ZIP"
+              assert "manifest.json" in output.namelist() and "main.php" in output.namelist()
+              assert not any(name.startswith(("ThemeEngine/", "docs/", "build/", ".github/")) for name in output.namelist())
+              assert json.loads(output.read("manifest.json"))["version"] == manifest["version"]
+
+          with open(os.environ["GITHUB_OUTPUT"], "a") as output:
+              output.write(f"tag={tag}\narchive={archive}\n")
+          print(f"Built {archive}")
+          PY
+
+      - name: Tag the pushed commit and publish the release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          TAG: ${{ steps.package.outputs.tag }}
+          ARCHIVE: ${{ steps.package.outputs.archive }}
+        shell: bash
+        run: |
+          if ! git show-ref --verify --quiet "refs/tags/$TAG"; then
+            git tag "$TAG" "$GITHUB_SHA"
+            git push origin "refs/tags/$TAG"
+          fi
+
+          if gh release view "$TAG" >/dev/null 2>&1; then
+            gh release upload "$TAG" "$ARCHIVE" --clobber
+          else
+            gh release create "$TAG" "$ARCHIVE" \
+              --verify-tag \
+              --title "$TAG" \
+              --generate-notes
+          fi
