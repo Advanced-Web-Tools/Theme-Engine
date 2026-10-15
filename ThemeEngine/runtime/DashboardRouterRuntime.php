@@ -20,7 +20,7 @@ final class DashboardRouterRuntime extends RuntimeRouterAPI
             ['/dashboard/customization/themes/{package_id}/preview', 'preview', 'theme_engine.theme.preview'],
             ['/dashboard/customization/themes/{package_id}/preview-settings', 'previewSettings', 'theme_engine.theme.preview_settings'],
             ['/dashboard/customization/themes/{package_id}/preview-settings/save', 'savePreviewSettings', 'theme_engine.theme.preview_settings.save', 'POST'],
-            ['/dashboard/customization/default-preview.png', 'defaultPreview', 'theme_engine.default_preview'],
+            ['/dashboard/customization/default-preview.webp', 'defaultPreview', 'theme_engine.default_preview'],
             ['/dashboard/customization/preview-theme.js', 'previewThemeJs', 'theme_engine.preview.theme_js'],
             ['/dashboard/customization/fontawesome/css/all.min.css', 'fontAwesomeCss', 'theme_engine.fontawesome.css'],
             ['/dashboard/customization/fontawesome/webfonts/{font}', 'fontAwesomeFont', 'theme_engine.fontawesome.font'],

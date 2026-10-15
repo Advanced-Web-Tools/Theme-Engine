@@ -13,7 +13,7 @@
 
         @if($selectedTheme)
             <div class="theme-hero">
-                <img class="theme-hero-image" data-preview-fallback="/dashboard/customization/default-preview.png" src="{{ $selectedTheme->previewImage ?: '/dashboard/customization/default-preview.png' }}" alt="">
+                <img class="theme-hero-image" data-preview-fallback="/dashboard/customization/default-preview.webp" src="{{ $selectedTheme->previewImage ?: '/dashboard/customization/default-preview.webp' }}" alt="">
                 <div class="theme-hero-content">
                     <a class="theme-back" href="/dashboard/customization?tab=themes"><i class="fa-solid fa-arrow-left fa-fw" aria-hidden="true"></i> All themes</a>
                     <div class="theme-heading">

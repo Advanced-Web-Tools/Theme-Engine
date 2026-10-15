@@ -18,7 +18,7 @@ final class CustomizationAssets
 
     public function defaultPreview(): Response
     {
-        return $this->asset('default_preview.png', 'image/png');
+        return $this->asset('default_preview.webp', 'image/png');
     }
 
     public function layoutCss(): Response

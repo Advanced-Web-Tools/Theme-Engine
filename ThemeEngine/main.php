@@ -24,7 +24,7 @@ final class ThemeEngineMain extends RuntimeLinkerAPI
         $navigation = new NavigationItem();
         $navigation->setUrl('/dashboard/customization');
         $navigation->setLabel('Customization');
-        $navigation->setIcon('/awt_packages/ThemeEngine/data/icons/icon.png');
+        $navigation->setIcon('/awt_packages/ThemeEngine/data/icons/icon.webp');
         $navigation->setPermissionLevel(1);
         $this->eventDispatcher->addListener(NavigationResponseEvent::NAME, new NavigationResponseEvent($navigation));
     }

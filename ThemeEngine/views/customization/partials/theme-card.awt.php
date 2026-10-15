@@ -1,6 +1,6 @@
 <div class="card theme-card {{ $engine->hasActiveTheme() && $engine->activeTheme()->packageId === $theme->packageId ? 'is-active w-100' : '' }}">
     <a class="theme-card-cover" href="/dashboard/customization/themes/{{ $theme->packageId }}" aria-label="View {{ $theme->name }}">
-        <img data-preview-fallback="/dashboard/customization/default-preview.png" src="{{ $theme->previewImage ?: '/dashboard/customization/default-preview.png' }}" alt="" loading="lazy">
+        <img data-preview-fallback="/dashboard/customization/default-preview.webp" src="{{ $theme->previewImage ?: '/dashboard/customization/default-preview.webp' }}" alt="" loading="lazy">
     </a>
     <div class="card-header">
         <a class="avatar-tile" href="/dashboard/customization/themes/{{ $theme->packageId }}" aria-label="View {{ $theme->name }}">
