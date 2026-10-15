@@ -7,8 +7,8 @@
   "type": 1,
   "system_package": 1,
   "description": "Explore, preview, and personalize themes for your AWT site. Customize layouts and settings, save your favorite configurations, and switch themes from one dashboard.",
-  "icon": "icon.png",
-  "preview_image": "preview/preview.png",
+  "icon": "icon.webp",
+  "preview_image": "preview/preview.webp",
   "license": "MIT",
   "license_url": "https://github.com/Advanced-Web-Tools/ThemeEngine/blob/main/LICENSE",
   "dependencies": [

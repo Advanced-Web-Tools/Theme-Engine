@@ -144,7 +144,7 @@ The Help tab uses native expandable questions for getting started, customization
 
 ### Package metadata and images
 
-Cards and detail headers use `icon` and `preview_image` URLs from installed package metadata. Missing icons use the theme name's initial. Missing preview images use `assets/default_preview.png`; failed image URLs also fall back to that asset. If the fallback fails, the image is hidden and the solid background remains.
+Cards and detail headers use `icon` and `preview_image` URLs from installed package metadata. Missing icons use the theme name's initial. Missing preview images use `assets/default_preview.webp`; failed image URLs also fall back to that asset. If the fallback fails, the image is hidden and the solid background remains.
 
 The detail page displays the description, version, author, license link, AWT compatibility range, installation date, package and activation status, dependencies, and declared routes. Dependency badges use installed versions and enablement with AWT version rules, distinguishing compatible, missing, disabled, incompatible, and uncheckable requirements. Installed dependency versions and source links are shown where available.
 
