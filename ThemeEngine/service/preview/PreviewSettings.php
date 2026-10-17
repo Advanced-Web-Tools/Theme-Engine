@@ -16,7 +16,7 @@ final class PreviewSettings
     public function save(int $packageId, array $post): void
     {
         $input = new CustomizationInput([], $post);
-        if (!in_array($input->operation(), ['settings', 'reset_settings', 'layout', 'page', 'preset_save', 'preset_apply', 'preset_delete'], true)) {
+        if (!in_array($input->operation(), ['settings', 'reset_settings', 'layout', 'page', 'widgets', 'page_widgets', 'preset_save', 'preset_apply', 'preset_delete', 'cache_clear'], true)) {
             throw new \InvalidArgumentException('Unknown preview settings operation.');
         }
         // The authenticated route determines the theme; never trust a posted theme ID.
@@ -32,10 +32,14 @@ final class PreviewSettings
         $blade->setPackageName('ThemeEngine');
         return $blade->run('preview/settings.awt.php', [
             'selectedTheme' => $theme,
+            'previewPageRoutes' => array_map(static fn($route) => $route->pageKey, $engine->definition()->routes),
             'definition' => $engine->definition(),
             'values' => $engine->settings(),
             'global' => $engine->globalSections(),
             'overrides' => $engine->pageOverrides(),
+            'availableWidgets' => $engine->widgets->all(),
+            'globalWidgets' => $engine->globalWidgets(),
+            'pageWidgets' => $engine->pageWidgetOverrides(),
             'presets' => $engine->presets(),
             'token' => (new Csrf())->token(),
         ]);

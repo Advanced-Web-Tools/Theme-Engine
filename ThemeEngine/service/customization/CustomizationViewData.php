@@ -49,6 +49,9 @@ final class CustomizationViewData
             'global' => $editingEngine?->globalSections() ?? Engine::defaultState()['sections'],
             'optional' => ThemeDefinition::OPTIONAL,
             'overrides' => $canEdit ? $editingEngine->pageOverrides() : [],
+            'availableWidgets' => $canEdit ? $editingEngine->widgets->all() : [],
+            'globalWidgets' => $canEdit ? $editingEngine->globalWidgets() : [],
+            'pageWidgets' => $canEdit ? $editingEngine->pageWidgetOverrides() : [],
             'presets' => $canEdit ? $editingEngine->presets() : [],
         ];
     }

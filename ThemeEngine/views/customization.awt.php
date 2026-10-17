@@ -23,6 +23,8 @@
                     @include('customization/tabs/layout.awt.php')
                 @elseif($tab === 'settings')
                     @include('customization/tabs/settings.awt.php')
+                @elseif($tab === 'widgets')
+                    @include('customization/tabs/widgets.awt.php')
                 @elseif($tab === 'presets')
                     @include('customization/tabs/presets.awt.php')
                 @endif

@@ -5,7 +5,7 @@ namespace ThemeEngine\service\customization;
 /** Validates HTTP fields without coupling customization services to PHP globals. */
 final class CustomizationInput
 {
-    public const TABS = ['themes', 'layout', 'settings', 'presets', 'help'];
+    public const TABS = ['themes', 'layout', 'settings', 'widgets', 'presets', 'help'];
 
     public function __construct(
         private readonly array $query,

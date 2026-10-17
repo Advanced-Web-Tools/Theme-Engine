@@ -10,7 +10,7 @@
 </head>
 <body class="theme-preview-window">
     <?php if ($settingsUrl !== null): ?>
-        <button id="theme-preview-settings-toggle" class="theme-preview-settings-launcher" type="button" aria-label="Theme settings" title="Theme settings" aria-expanded="false" aria-controls="theme-preview-settings-popup"><i class="fa-solid fa-sliders fa-fw" aria-hidden="true"></i></button>
+        <button id="theme-preview-settings-toggle" class="theme-preview-settings-launcher" type="button" aria-label="Edit theme" title="Edit theme" aria-expanded="false" aria-controls="theme-preview-settings-popup"><i class="fa-solid fa-pen fa-fw" aria-hidden="true"></i> Edit</button>
         <section id="theme-preview-settings-popup" class="theme-preview-settings-popup" aria-label="Theme customization" data-settings-url="<?= $settingsUrl ?>" inert>
             <div class="theme-preview-settings-heading">
                 <strong>Theme customization</strong>

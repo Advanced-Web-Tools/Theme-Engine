@@ -9,7 +9,9 @@ use Dashboard\api\widget\WidgetDefinition;
 use database\provider\DatabaseProvider;
 use object\ObjectFactory;
 use runtime\api\RuntimeAPI;
+use ThemeEngine\api\events\SidebarWidgetRegistryEvent;
 use ThemeEngine\service\DatabaseStore;
+use ThemeEngine\service\DefaultSidebarWidgets;
 use ThemeEngine\service\Engine;
 use ThemeEngine\service\JsonSourceCache;
 use ThemeEngine\service\PageReadyBridge;
@@ -25,6 +27,7 @@ final class ThemeLoaderRuntime extends RuntimeAPI
     {
         $provider = new DatabaseProvider();
         $registry = $this->loadThemeRegistry($provider);
+        $this->eventDispatcher->addListener(SidebarWidgetRegistryEvent::NAME, new DefaultSidebarWidgets($registry));
         $cacheRoot = rtrim(COMPILED, '/\\') . '/ThemeEngine';
 
         $engine = new Engine(

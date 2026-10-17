@@ -18,13 +18,17 @@ final class Engine
     private ?ThemeDefinition $definition = null;
     private bool $loadedDispatched = false;
     public ?string $loadError = null;
+    public readonly SidebarWidgetRegistry $widgets;
 
     public function __construct(
         public readonly ThemeRegistry $registry,
         public readonly IStore $store,
         public readonly JsonSourceCache $cache,
         public readonly EventDispatcher $dispatcher,
-    ) {}
+        ?SidebarWidgetRegistry $widgets = null,
+    ) {
+        $this->widgets = $widgets ?? new SidebarWidgetRegistry($dispatcher);
+    }
 
     public static function defaultState(): array
     {
@@ -190,16 +194,54 @@ final class Engine
         });
     }
 
+    /** Theme-wide sidebar placements, persisted in the selected theme's config. */
+    public function globalWidgets(): array
+    {
+        return array_replace(['side_l' => [], 'side_r' => []],
+            $this->store->config($this->activeTheme()->packageId)['widgets'] ?? []);
+    }
+
+    public function pageWidgetOverrides(): array
+    {
+        return $this->store->config($this->activeTheme()->packageId)['page_widgets'] ?? [];
+    }
+
+    public function widgetsFor(string $pageKey): array
+    {
+        $this->assertPage($pageKey);
+        return array_replace($this->globalWidgets(), $this->pageWidgetOverrides()[$pageKey] ?? []);
+    }
+
+    public function saveGlobalWidgets(array $input): void
+    {
+        $values = (new SidebarWidgetSettings())->validate($input, $this->widgets->all(), $this->globalWidgets());
+        $this->updateConfig(fn($config) => array_replace($config, ['widgets' => $values]));
+    }
+
+    /** Missing/null sidebar inherits the theme; an empty array explicitly removes its widgets. */
+    public function savePageWidgets(string $pageKey, array $input): void
+    {
+        $this->assertPage($pageKey);
+        $values = (new SidebarWidgetSettings())->validate($input, $this->widgets->all(),
+            $this->pageWidgetOverrides()[$pageKey] ?? [], true);
+        $this->updateConfig(function ($config) use ($pageKey, $values) {
+            if ($values === []) unset($config['page_widgets'][$pageKey]);
+            else $config['page_widgets'][$pageKey] = $values;
+            return $config;
+        });
+    }
+
     public function createDocument(ThemePageContext $context): IURPCDocument
     {
         if ($context->theme->packageId !== $this->activeTheme()->packageId) {
             throw new \LogicException('Page belongs to an inactive theme.');
         }
         $this->assertPage($context->pageKey);
-        return (new ThemeDocumentBuilder($this->cache))->build(
+        return (new ThemeDocumentBuilder($this->cache, $this->widgets))->build(
             $this->definition(),
             $context,
             $this->sectionsFor($context->pageKey),
+            $this->widgetsFor($context->pageKey),
         );
     }
 
@@ -222,6 +264,8 @@ final class Engine
                 'settings' => $this->settings(),
                 'pages' => $this->pageOverrides(),
                 'sections' => $this->globalSections(),
+                'widgets' => $this->globalWidgets(),
+                'page_widgets' => $this->pageWidgetOverrides(),
             ],
         ));
     }
@@ -252,13 +296,27 @@ final class Engine
                 }
             }
         }
-        $this->store->transaction(function () use ($settings, $sections, $pages) {
+        // Legacy presets predate widgets: retain existing placements when absent.
+        $widgets = $this->globalWidgets();
+        $pageWidgets = $this->pageWidgetOverrides();
+        if (isset($selected['widgets'])) {
+            $widgets = (new SidebarWidgetSettings())->validate($selected['widgets'], $this->widgets->all(), $selected['widgets']);
+            $pageWidgets = [];
+            foreach (($selected['page_widgets'] ?? []) as $key => $placements) {
+                if (isset($this->definition()->pages[$key])) {
+                    $pageWidgets[$key] = (new SidebarWidgetSettings())->validate($placements, $this->widgets->all(), $placements, true);
+                }
+            }
+        }
+        $this->store->transaction(function () use ($settings, $sections, $pages, $widgets, $pageWidgets) {
             $this->store->saveConfig(
                 $this->activeTheme()->packageId,
                 array_replace($this->store->config($this->activeTheme()->packageId), [
                     'settings' => $settings,
                     'pages' => $pages,
                     'sections' => $sections,
+                    'widgets' => $widgets,
+                    'page_widgets' => $pageWidgets,
                 ]),
             );
         });

@@ -70,9 +70,17 @@
             </div>
         </details>
         <details>
+            <summary>How do I add sidebar widgets?</summary>
+            <div class="theme-help-answer">
+                <p>Open Widgets, choose widgets for the left or right sidebar, and save. Use the arrows to change their order. Enable the sidebar in Layout.</p>
+                <p>Each page can use the theme's widgets or choose its own. An empty page selection removes widgets from that sidebar. Widgets become available when an enabled package registers them.</p>
+                <a href="{{ $customizationUrl }}?tab=widgets">Open widgets</a>
+            </div>
+        </details>
+        <details>
             <summary>What does a preset save?</summary>
             <div class="theme-help-answer">
-                <p>A preset captures the theme's saved settings, default layout, and page overrides. Save your configuration forms first, then name and save a preset.</p>
+                <p>A preset captures the theme's saved settings, layout, page overrides, and sidebar widgets. Save your configuration forms first, then name and save a preset.</p>
                 <p>Applying a preset restores that theme's configuration without activating it. Deleting a preset removes the snapshot. Presets belong to the theme that created them.</p>
                 <a href="{{ $customizationUrl }}?tab=presets">Manage presets</a>
             </div>
@@ -82,18 +90,18 @@
     <section class="card theme-help-section" aria-labelledby="help-preview-heading">
         <h2 id="help-preview-heading" class="h4">Using previews</h2>
         <details>
-            <summary>How do I preview pages and routes?</summary>
+            <summary>How do I preview a page?</summary>
             <div class="theme-help-answer">
-                <p>Open a theme's details to see its available routes. Enter any required route parameters, such as an article ID, then select Preview route. The preview uses that theme's saved settings and layout.</p>
+                <p>Open a theme's About theme tab and find Available pages. Enter any required details, such as an article ID, then select View page. The page uses that theme's saved settings and layout.</p>
                 <p>Links to the theme's other routes stay in preview mode. External links and links outside the theme keep their normal destinations.</p>
-                <a href="{{ $customizationUrl }}?tab=themes">{{ $selectedTheme ? 'Open theme preview' : 'Choose a theme to preview' }}</a>
+                <a href="{{ $customizationUrl }}?tab=themes">{{ $selectedTheme ? 'View available pages' : 'Choose a theme to preview' }}</a>
             </div>
         </details>
         <details>
-            <summary>How do device sizes and the separate window work?</summary>
+            <summary>How do preview controls work?</summary>
             <div class="theme-help-answer">
                 <p>Desktop fills the available space. Tablet uses 768 × 1024 pixels, and Mobile uses 390 × 844 pixels. Switching sizes keeps the current preview page loaded.</p>
-                <p>Select the open-in-window button above the preview for a separate window. Its floating controls sit at the bottom, with the current size below them. On phone and tablet screens, size switching is disabled and the preview follows the available screen.</p>
+                <p>Device controls sit at the bottom right; settings open from the bottom left. Global settings and layout defaults apply across the theme. Page layout controls show only the page being previewed and follow navigation. Presets replace the configuration for the whole theme. Saving changes affects the live site when this theme is active. On phone and tablet screens, the preview follows the available screen.</p>
             </div>
         </details>
     </section>

@@ -1,7 +1,9 @@
-<h1>A personal touch.</h1>
+@if(!($compactEditor ?? false))
+<h1>Global theme settings</h1>
 <p class="lead mb-4">
-    Fine-tune the settings provided by {{ $selectedTheme ? $selectedTheme->name : 'your active theme' }}.
+    These settings apply across all pages in {{ $selectedTheme ? $selectedTheme->name : 'your active theme' }}.
 </p>
+@endif
 
 @if(!$definition)
     <div class="card empty-state">
@@ -13,7 +15,9 @@
     </div>
 @elseif(count($definition->settings) === 0)
     <div class="card empty-state">
+        @if(!($compactEditor ?? false))
         <h2 class="h3">{{ $definition->label }} is ready to go.</h2>
+        @endif
         <p>This theme does not provide additional settings.</p>
     </div>
 @else
@@ -24,10 +28,12 @@
         <input type="hidden" name="operation" value="settings">
         <input type="hidden" name="tab" value="settings">
 
+        @if(!($compactEditor ?? false))
         <h2 class="h4 mb-1">{{ $definition->label }}</h2>
         <span class="text-small text-muted">
-        Changes are saved for {{ $definition->label }}.
+        Changes are saved for all pages in {{ $definition->label }}.
     </span>
+        @endif
 
         @foreach($definition->settings as $key=>$field)
             @include('customization/partials/setting-field.awt.php', ['key' => $key, 'field' => $field])

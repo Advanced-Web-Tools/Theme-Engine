@@ -54,6 +54,79 @@ Activation validates the theme and warms its declared JSON sources before persis
 
 Do not use activation to render a preview. Use `forTheme()` or `ThemePreview` instead. In HTTP integrations, enforce your application's authentication, permission, and CSRF rules before calling methods that write configuration.
 
+## Sidebar widgets
+
+Sidebar widgets are separate from Dashboard widgets. Enabled package runtimes contribute them through `SidebarWidgetRegistryEvent` (`theme_engine.widgets.register`). ThemeEngine fires this event once on first registry lookup or rendering; selected theme clones share the same registry. Registrations are rebuilt each request; only placements are persisted.
+
+```php
+use ThemeEngine\api\SidebarWidgetDefinition;
+use ThemeEngine\api\ThemePageContext;
+use ThemeEngine\api\contracts\ISectionProvider;
+use ThemeEngine\service\LayoutBuilder;
+use ThemeEngine\api\events\SidebarWidgetRegistryEvent;
+use ThemeEngine\api\events\SidebarWidgetRegistrationListener;
+
+// In your package runtime main(), after waiting for ThemeEngine:
+$widget = new SidebarWidgetDefinition(
+    key: 'MyPackage/welcome',
+    label: 'Welcome',
+    provider: new class implements ISectionProvider {
+        public function createBlocks(ThemePageContext $context): array
+        {
+            return [LayoutBuilder::block('p', 'Welcome to ' . $context->theme->name)];
+        }
+    },
+);
+$this->eventDispatcher->addListener(
+    SidebarWidgetRegistryEvent::NAME,
+    new SidebarWidgetRegistrationListener($widget),
+);
+```
+
+A listener that contributes several widgets can implement `IEventListener`, check for `SidebarWidgetRegistryEvent`, and call `$event->getRegistry()->register(...)`. Install listeners during runtime startup; defer registry reads and placement saves until all runtimes have run. Direct `$engine->widgets->register(...)` registration remains supported.
+
+ThemeEngine supplies these defaults through its own `DefaultSidebarWidgets` listener:
+
+| Key | Label | Content |
+| --- | --- | --- |
+| `ThemeEngine/pages` | Pages | Links to concrete pages of the selected theme, marking the current page. Parameterized routes and duplicate page aliases are omitted. |
+| `ThemeEngine/current-page` | Current page | The selected page's label. |
+| `ThemeEngine/date` | Today | The current date in the site's PHP timezone. |
+
+Choose them in **Widgets** and save their sidebar placements. Registration does not automatically place widgets or change existing configurations. Built-ins produce fresh URPC blocks for the selected theme, including inactive-theme previews. Page links follow the normal preview navigation rewriting.
+
+After runtime startup, placement APIs can be used from an authenticated customization action:
+
+```php
+$editing = $engine->forTheme($packageId);
+$editing->saveGlobalWidgets([
+    'side_l' => ['MyPackage/welcome'],
+    'side_r' => [],
+]);
+$editing->savePageWidgets('article', [
+    'side_l' => [], // No widgets on this page's left sidebar.
+    // Missing side_r inherits the theme's right sidebar widgets.
+]);
+$editing->savePageWidgets('article', []); // Restore inheritance for both sidebars.
+$placements = $editing->widgetsFor('article');
+$registered = $engine->widgets->all();
+```
+
+Providers implement `ISectionProvider` and must return fresh `IURPCBlock` objects on every call. They receive the selected theme, saved settings, page key, and page data. Duplicate registration keys, unknown widget keys, repeated widgets within a sidebar, unknown pages, and placements outside `side_l`/`side_r` are rejected. Up to 50 widgets can be placed in each sidebar, in saved order. The same widget can appear once in each sidebar.
+
+Enable the desired sidebar in Layout. Widgets append after any existing theme/page sidebar source. Disabled sidebars never invoke widget providers. If a package is disabled or removed, its saved widget keys remain editable but are skipped during rendering. Re-registering the key restores its placements.
+
+Theme and page placements are stored in `theme_engine_settings.payload`, scoped by `package_id`:
+
+```json
+{
+  "widgets": {"side_l": ["MyPackage/welcome"], "side_r": []},
+  "page_widgets": {"article": {"side_l": []}}
+}
+```
+
+Missing or `null` page sidebar values inherit; an explicit empty list removes that sidebar's widgets. Presets include both placement maps. Older presets without widgets retain the existing placements. No schema migration is needed.
+
 ## Settings
 
 ```php
