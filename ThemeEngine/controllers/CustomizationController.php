@@ -35,6 +35,9 @@ final class CustomizationController extends DashboardControllerBase
     public array $optional;
     public array $overrides;
     public array $presets;
+    public array $availableWidgets;
+    public array $globalWidgets;
+    public array $pageWidgets;
     public ?ThemeDefinition $definition;
     public ?ThemeRecord $selectedTheme;
     public array $themeRoutes;

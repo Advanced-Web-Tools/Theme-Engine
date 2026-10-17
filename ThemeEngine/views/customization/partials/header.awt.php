@@ -40,11 +40,11 @@
         @endif
 
         <nav class="nav-tabs" aria-label="Customization">
-            @foreach(['themes'=>'Themes','layout'=>'Layout','settings'=>'Theme settings','presets'=>'Presets','help'=>'Help'] as $key=>$label)
+            @foreach(['themes'=>'Themes','layout'=>'Layout','settings'=>'Theme settings','widgets'=>'Widgets','presets'=>'Presets','help'=>'Help'] as $key=>$label)
                 <a href="{{ $customizationUrl }}?tab={{ $key }}"
                    class="{{ $tab === $key ? 'active' : '' }}"
                    @if($tab === $key) aria-current="page" @endif>
-                    <i class="fa-solid {{ $selectedTheme && $key === 'themes' ? 'fa-circle-info' : ['themes'=>'fa-palette','layout'=>'fa-table-columns','settings'=>'fa-sliders','presets'=>'fa-bookmark','help'=>'fa-circle-question'][$key] }} fa-fw" aria-hidden="true"></i>
+                    <i class="fa-solid {{ $selectedTheme && $key === 'themes' ? 'fa-circle-info' : ['themes'=>'fa-palette','layout'=>'fa-table-columns','settings'=>'fa-sliders','widgets'=>'fa-cubes-stacked','presets'=>'fa-bookmark','help'=>'fa-circle-question'][$key] }} fa-fw" aria-hidden="true"></i>
                     {{ $selectedTheme && $key === 'themes' ? 'About theme' : $label }}
                 </a>
             @endforeach

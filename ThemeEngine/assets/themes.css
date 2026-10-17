@@ -470,11 +470,16 @@
     background: var(--accent-hover);
 }
 
-.theme-preview-floating button,.theme-back {
+.theme-customization-content .btn,
+.theme-preview-window .btn,
+.theme-preview-settings-popup button,
+.theme-preview-floating button,
+.theme-back {
     display: inline-flex;
     align-items: center;
     justify-content: center;
     gap: 6px;
+    text-align: center;
 }
 
 .nav-tabs a {
@@ -740,3 +745,14 @@
     width: 100%;
     max-width: none;
 }
+
+/* Sidebar widget placement uses the same flat sections in dashboard and preview. */
+.theme-widget-sidebar { margin-top: 24px; }
+.theme-widget-sidebar + .theme-widget-sidebar { padding-top: 24px; border-top: 1px solid var(--border); }
+.theme-widget-sidebar h3 { margin: 0 0 16px; }
+.theme-widget-list { min-width: 0; border: 0; padding: 0; margin: 16px 0 0; }
+.theme-widget-list[hidden] { display: none; }
+.theme-widget-rows { display: grid; gap: 12px; margin-bottom: 16px; }
+.theme-widget-row { display: flex; align-items: center; gap: 8px; }
+.theme-widget-row select { flex: 1; min-width: 0; }
+.theme-widget-row button { flex-shrink: 0; padding-inline: 10px; }

@@ -3,6 +3,7 @@
 namespace ThemeEngine\service\customization;
 
 use ThemeEngine\service\Engine;
+use ThemeEngine\service\SidebarWidgetSettings;
 
 /** Executes a validated dashboard operation against the already selected theme. */
 final class CustomizationActions
@@ -24,6 +25,25 @@ final class CustomizationActions
                 break;
             case 'page':
                 $engine->savePageSections($input->string('page_key'), $input->array('sections'));
+                break;
+            case 'widgets':
+                $engine->saveGlobalWidgets($input->array('widgets'));
+                break;
+            case 'page_widgets':
+                $placements = $input->array('widgets');
+                $modes = $input->array('widget_mode');
+                if (array_diff_key($modes, SidebarWidgetSettings::SIDEBARS)) {
+                    throw new \InvalidArgumentException('Unknown sidebar.');
+                }
+                foreach (SidebarWidgetSettings::SIDEBARS as $sidebar => $label) {
+                    $mode = $modes[$sidebar] ?? 'inherit';
+                    if (!in_array($mode, ['inherit', 'custom'], true)) {
+                        throw new \InvalidArgumentException('Invalid widget scope.');
+                    }
+                    if ($mode === 'inherit') unset($placements[$sidebar]);
+                    else $placements[$sidebar] ??= [];
+                }
+                $engine->savePageWidgets($input->string('page_key'), $placements);
                 break;
             case 'preset_save':
                 $engine->savePreset($input->string('preset_name'));

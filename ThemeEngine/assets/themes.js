@@ -262,7 +262,7 @@
                 install(html, preserved);
                 body.inert = false;
                 body.querySelectorAll('button[type="submit"]').forEach(button => { button.disabled = false; });
-                if (['settings', 'reset_settings', 'layout', 'page', 'preset_apply'].includes(operation)) {
+                if (['settings', 'reset_settings', 'layout', 'page', 'widgets', 'page_widgets', 'preset_apply'].includes(operation)) {
                     status.textContent = 'Clearing cache…';
                     const clearData = new URLSearchParams({operation: 'cache_clear', _token: data.get('_token')});
                     try {
@@ -302,10 +302,46 @@
         });
     }
 
+    function initializeSidebarWidgets() {
+        // Delegation also covers forms loaded or replaced inside the preview editor.
+        document.addEventListener('change', event => {
+            if (!event.target.matches('[data-widget-mode]')) return;
+            const list = event.target.closest('[data-widget-sidebar]').querySelector('[data-widget-list]');
+            list.hidden = list.disabled = event.target.value === 'inherit';
+            event.target.closest('form').dispatchEvent(new Event('change', {bubbles: true}));
+        });
+        document.addEventListener('click', event => {
+            const button = event.target.closest('[data-widget-add], [data-widget-remove], [data-widget-move]');
+            if (!button) return;
+            const sidebar = button.closest('[data-widget-sidebar]');
+            const rows = sidebar.querySelector('[data-widget-rows]');
+            const form = button.closest('form');
+            if (button.hasAttribute('data-widget-add')) {
+                rows.append(sidebar.querySelector('[data-widget-row-template]').content.cloneNode(true));
+                rows.lastElementChild.querySelector('select').focus();
+            } else {
+                const row = button.closest('[data-widget-row]');
+                const previous = row.previousElementSibling;
+                const next = row.nextElementSibling;
+                if (button.hasAttribute('data-widget-remove')) {
+                    row.remove();
+                    (next?.querySelector('select') || previous?.querySelector('select') || sidebar.querySelector('[data-widget-add]')).focus();
+                } else if (button.dataset.widgetMove === 'up' && previous) {
+                    rows.insertBefore(row, previous);
+                    button.focus();
+                } else if (button.dataset.widgetMove === 'down' && next) {
+                    rows.insertBefore(next, row);
+                    button.focus();
+                }
+            }
+            form.dispatchEvent(new Event('change', {bubbles: true}));
+        });
+    }
+
     function initializeUnsavedChanges() {
         const indicator = document.getElementById('theme-unsaved-indicator');
         const actions = indicator?.querySelector('[data-unsaved-actions]');
-        const trackedOperations = new Set(['settings', 'layout', 'page', 'preset_save']);
+        const trackedOperations = new Set(['settings', 'layout', 'page', 'widgets', 'page_widgets', 'preset_save']);
         const snapshots = new Map();
         const dirtyForms = new Set();
         const saveButtons = new Map();
@@ -330,7 +366,7 @@
                     button.type = 'button';
                     button.className = 'btn btn-primary';
                     button.hidden = true;
-                    button.textContent = operation === 'page'
+                    button.textContent = ['page', 'page_widgets'].includes(operation)
                         ? `Save ${form.querySelector('h2')?.textContent.trim() || 'page layout'}`
                         : (submitter.textContent.trim() || submitter.value || 'Save');
                     // Submit the original form so validation, CSRF, and theme context are preserved.
@@ -364,5 +400,6 @@
     initializeImageFallbacks();
     initializePreview();
     initializePreviewSettings();
+    initializeSidebarWidgets();
     initializeUnsavedChanges();
 })();

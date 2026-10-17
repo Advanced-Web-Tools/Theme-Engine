@@ -70,9 +70,17 @@
             </div>
         </details>
         <details>
+            <summary>How do I add sidebar widgets?</summary>
+            <div class="theme-help-answer">
+                <p>Open Widgets, choose widgets for the left or right sidebar, and save. Use the arrows to change their order. Enable the sidebar in Layout.</p>
+                <p>Each page can use the theme's widgets or choose its own. An empty page selection removes widgets from that sidebar. Widgets become available when an enabled package registers them.</p>
+                <a href="{{ $customizationUrl }}?tab=widgets">Open widgets</a>
+            </div>
+        </details>
+        <details>
             <summary>What does a preset save?</summary>
             <div class="theme-help-answer">
-                <p>A preset captures the theme's saved settings, default layout, and page overrides. Save your configuration forms first, then name and save a preset.</p>
+                <p>A preset captures the theme's saved settings, layout, page overrides, and sidebar widgets. Save your configuration forms first, then name and save a preset.</p>
                 <p>Applying a preset restores that theme's configuration without activating it. Deleting a preset removes the snapshot. Presets belong to the theme that created them.</p>
                 <a href="{{ $customizationUrl }}?tab=presets">Manage presets</a>
             </div>

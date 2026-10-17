@@ -102,6 +102,7 @@ Stylesheet and script URLs from `ThemeDefinition` are deduplicated, with layout 
 | Event | Timing | Payload / API |
 | --- | --- | --- |
 | `theme_engine.theme.loaded` | Once per request engine instance, after active-theme route registration. Omitted when no valid theme is active. | `ThemeLoadedEvent`: `theme`, `definition`. |
+| `theme_engine.widgets.register` | Once on first sidebar registry lookup/render, after package listeners are attached. | `SidebarWidgetRegistryEvent`: `getRegistry()`; listeners register `SidebarWidgetDefinition` instances. |
 | `theme_engine.page.ready` | On every `ThemePage` URPC render, after layout assembly and URPC ID assignment, before block processors and HTML generation. Includes preview renders. | `PageReadyEvent`: `getDocument()`, `setDocument()`, `getSection()`, `context`, `controller`. |
 
 `PageReadyBridge` listens to `urpc.before_render` and filters for `ThemePage` controllers. Listeners may mutate live blocks or replace the document; replacements are forwarded to URPC. Preserve the original block UID when overriding a block. IDs are not recalculated after this event.
@@ -115,14 +116,14 @@ Register `theme_engine.theme.loaded` listeners before `PublicRouterRuntime` runs
 | Table | Stored data |
 | --- | --- |
 | `theme_engine_state` | One row, `id=1`: active theme ID and legacy site-wide section visibility. |
-| `theme_engine_settings` | One row per `package_id`: theme settings, default section visibility, and page overrides. |
+| `theme_engine_settings` | One row per `package_id`: theme settings, default section visibility, page overrides, and sidebar widget placements. |
 | `theme_engine_presets` | Package-specific presets, each with a name and a complete configuration snapshot. |
 
 Generated settings forms support text, textarea, boolean, number with min/max, select, color, and HTTP(S) URL fields. Fields have a label and default, with optional description, required, and max-length constraints. The server validates values and rejects unknown keys. Each theme retains its settings when activation changes.
 
 Default layout visibility is stored in each theme's configuration under `sections`, alongside its settings and page overrides. Legacy site-wide defaults remain the fallback for themes without saved layout preferences.
 
-A preset captures the selected theme's settings, default section visibility, and page overrides. Applying it is transactional and does not activate the theme. Presets cannot be applied or deleted through another theme's ID. After schema changes, unknown fields are omitted and new or invalid values use defaults. Deleting a preset removes only that snapshot. Multiple presets may share a name.
+A preset captures the selected theme's settings, default section visibility, page overrides, and sidebar widget placements. Applying it is transactional and does not activate the theme. Presets cannot be applied or deleted through another theme's ID. After schema changes, unknown fields are omitted and new or invalid values use defaults. Deleting a preset removes only that snapshot. Multiple presets may share a name.
 
 Activation validates the theme contract, controllers, declared JSON sources, reserved dashboard/storage paths, and duplicate routes within the theme. A new selection takes effect on the next request. AWT RouterManager does not report every route conflict with other packages, so coordinate public paths with those packages. An invalid active theme displays an error while leaving the customization dashboard available.
 
@@ -130,15 +131,25 @@ Activation validates the theme contract, controllers, declared JSON sources, res
 
 The source cache uses the private `COMPILED/ThemeEngine` directory, the source JSON content hash, and its logical source key. It stores normalized JSON blocks and hydrates fresh objects without PHP `unserialize()`. Source edits invalidate the corresponding entry; corrupt entries are rebuilt. An unwritable cache directory does not prevent rendering.
 
-After saving settings, layout, page overrides, restoring defaults, or applying a preset in the preview editor, the browser sends a separate authenticated POST for the existing `cache_clear` action, waits for it to finish, and then navigates the frame to its current URL with a fresh `_preview_refresh` query value. This forces a new request while retaining the current page, route parameters, fragment, and unsaved editor forms. A failed save does not clear the cache; a failed clear reports that the save succeeded but cache clearing failed.
+After saving settings, layout, page overrides, sidebar widgets, restoring defaults, or applying a preset in the preview editor, the browser sends a separate authenticated POST for the existing `cache_clear` action, waits for it to finish, and then navigates the frame to its current URL with a fresh `_preview_refresh` query value. This forces a new request while retaining the current page, route parameters, fragment, and unsaved editor forms. A failed save does not clear the cache; a failed clear reports that the save succeeded but cache clearing failed.
 
 The cache excludes finished HTML, event mutations, PHP provider data, and user-specific documents. Providers and `theme_engine.page.ready` run on every render. The dashboard includes a Clear cache action.
 
 ## Customization dashboard
 
-`/dashboard/customization` offers Themes, Layout, Theme settings, Presets, and Help tabs. `CustomizationController` enforces dashboard authentication and permission level 1. Save actions are POST-only and use AWT CSRF protection. Successful saves use POST-redirect-GET to avoid repeated submissions on refresh.
+`/dashboard/customization` offers Themes, Layout, Theme settings, Widgets, Presets, and Help tabs. `CustomizationController` enforces dashboard authentication and permission level 1. Save actions are POST-only and use AWT CSRF protection. Successful saves use POST-redirect-GET to avoid repeated submissions on refresh.
 
-Theme cards open `/dashboard/customization/themes/{package_id}`. The active theme appears first and spans the collection width. Detail pages keep About theme, Layout, Theme settings, and Presets scoped to the selected package. Enabled inactive themes can be configured before activation. Forms, redirects, and validation errors retain that package's context. Disabled or invalid themes explain why editing is unavailable.
+Theme cards open `/dashboard/customization/themes/{package_id}`. The active theme appears first and spans the collection width. Detail pages keep About theme, Layout, Theme settings, Widgets, and Presets scoped to the selected package. Enabled inactive themes can be configured before activation. Forms, redirects, and validation errors retain that package's context. Disabled or invalid themes explain why editing is unavailable.
+
+### Sidebar widgets
+
+`SidebarWidgetRegistry`, published as `$engine->widgets`, accepts `SidebarWidgetDefinition` instances through the lazy `theme_engine.widgets.register` event. Package runtimes attach `SidebarWidgetRegistrationListener` instances or their own `IEventListener` implementations. The event fires once per registry, including across theme clones; failed discovery rolls back partial registrations. Runtime listeners must be installed before the first registry read. Direct registration remains supported. Each definition has a stable key, label, and `ISectionProvider` that returns fresh URPC blocks. Widgets are appended to the enabled `side_l` or `side_r` section after its theme/page source. Widget wrappers expose `.te-widget` and `data-te-widget` and participate in the normal URPC identity and page-ready lifecycle. Hidden sidebars skip providers entirely; widget output is never stored in the JSON source cache.
+
+The loader attaches `DefaultSidebarWidgets`, which contributes Pages, Current page, and Today through the same event. Pages links only concrete routes, deduplicates aliases by page key, and marks the current page; previews use the selected theme rather than the public active theme. Today uses the PHP site timezone. Registration adds available choices without assigning sidebar placements.
+
+The Widgets tab provides selection, removal, and ordering for each sidebar, with separate theme defaults and per-page overrides. In preview, it shows theme defaults and only the current page, following navigation. Each sidebar independently inherits or uses its page selection; an explicit empty list removes widgets while retaining any declared sidebar source. Layout still controls sidebar visibility.
+
+Placements live in the existing configuration payload as `widgets` and `page_widgets`. No new table or installation hook is required. Theme clones share the registry but persist placements under their own package ID. Unavailable registrations are skipped without deleting their placements. New presets capture both maps; legacy presets retain current placements. See [Sidebar widgets API](api.md#sidebar-widgets) for registration and persistence examples.
 
 ### Help
 
@@ -166,7 +177,7 @@ Device controls resize the frame without reloading its route:
 
 Oversized frames can be scrolled horizontally. The separate preview window starts at the selected device size and has connected, icon-only 48-pixel size buttons stacked at the bottom right. Only the stack's outer top and bottom corners are rounded. Hover titles identify each device; the stack has no visible container or dimensions label. Controls sit outside the theme frame, so preview navigation retains the controls and selected size.
 
-The standalone window also has an icon-only Font Awesome settings button at the bottom left. It opens an animated floating popup with Theme settings, Layout, and Presets tabs, using the same forms as the dashboard. Global settings and layout defaults are explicitly labeled as applying across the theme. Layout shows only the currently previewed page’s overrides and follows navigation inside the frame. Presets are labeled as theme-wide. Saving updates the stored theme configuration, including the live site when active. Changes take effect after Save or Apply and reload the current route inside the frame. Saving one form preserves unsaved changes in other forms; closing the popup also retains them. Applying a preset or restoring defaults asks before replacing unsaved edits. The popup uses the dashboard’s underline navigation tabs, flat sections separated by top rules, and distinct heading sizes. Preview forms omit repeated dashboard introductions and scope paragraphs, with wider spacing between controls and sections. Idle status text stays hidden. It supports keyboard tab navigation, Escape to close, light/dark appearance, and reduced motion.
+The standalone window also has a pen icon and Edit button at the bottom left. It opens an animated floating popup with Global settings, Layout, Widgets, and Presets tabs, using the same forms as the dashboard. Global settings and layout defaults are explicitly labeled as applying across the theme. Layout shows only the currently previewed page’s overrides and follows navigation inside the frame. Presets are labeled as theme-wide. Saving updates the stored theme configuration, including the live site when active. Changes take effect after Save or Apply and reload the current route inside the frame. Saving one form preserves unsaved changes in other forms; closing the popup also retains them. Applying a preset or restoring defaults asks before replacing unsaved edits. The popup uses the dashboard’s underline navigation tabs, flat sections separated by top rules, and distinct heading sizes. Preview forms omit repeated dashboard introductions and scope paragraphs, with wider spacing between controls and sections. Idle status text stays hidden. It supports keyboard tab navigation, Escape to close, light/dark appearance, and reduced motion.
 
 The popup uses authenticated `/dashboard/customization/themes/{package_id}/preview-settings` and POST `/dashboard/customization/themes/{package_id}/preview-settings/save` endpoints. Saves retain the existing CSRF protection and schema validation, with the route determining the theme being edited.
 
@@ -178,7 +189,7 @@ Preview controls follow the dashboard's saved light/dark preference, falling bac
 
 Customization tabs, devices, navigation, and form actions use AWT's bundled Font Awesome Free 6.5 assets through fixed CSS and allowlisted WOFF2 routes. Decorative icons retain visible labels. Headings, metadata, status badges, and feedback use plain text.
 
-Settings, default layout, page overrides, and preset-name forms track unsaved changes. The message includes a Save button for each changed form, labeled by action or page name. It submits the original form with native validation, CSRF, and theme context. Restoring original values clears the indicator. Leaving triggers the browser reminder; submitting one changed form still protects pending changes in other forms.
+Settings, default layout, page overrides, widget placements, and preset-name forms track unsaved changes. The message includes a Save button for each changed form, labeled by action or page name. It submits the original form with native validation, CSRF, and theme context. Restoring original values clears the indicator. Leaving triggers the browser reminder; submitting one changed form still protects pending changes in other forms.
 
 ## Development builds
 
@@ -221,3 +232,14 @@ Remote installation is for development environments. In the server's `awt_config
 ## Response compatibility
 
 The CSS response uses `Response::file()` instead of `Response::data()`, which accepts only arrays.
+
+## Local regression checks
+
+From the repository root:
+
+```bash
+php tests/layout-cache.php
+php tests/sidebar-widgets.php
+```
+
+These use an in-memory persistence fixture and temporary files, with the sibling AWT framework and URPC checkouts for their contracts and renderer. Set `AWT_FRAMEWORK_CLASSES` and `URPC_PACKAGE_ROOT` when those dependencies live elsewhere. The widget check exercises JSON persistence, theme isolation, page inheritance, empty overrides, provider output, ordering, hidden sections, presets, preview save scoping, Blade forms, lazy event registration, built-in widget output, HTML escaping, and preview navigation.

@@ -1,7 +1,7 @@
 @if(!($compactEditor ?? false))
 <h1>Theme presets</h1>
 <p class="lead mb-4">
-    Presets capture theme settings, the default layout and page overrides.
+    Presets capture theme settings, layouts, page overrides, and sidebar widgets.
     Applying a preset replaces the saved configuration across all pages in this theme.
 </p>
 @endif
@@ -16,7 +16,7 @@
     </div>
 @else
     @if($compactEditor ?? false)
-        <p class="text-small text-muted">Applying a preset replaces settings and layouts for all pages.</p>
+        <p class="text-small text-muted">Applying a preset replaces settings, layouts, and widgets for all pages.</p>
     @endif
     <div class="card-stack content-panel">
         <form class="card" method="post" action="/dashboard/customization/save">

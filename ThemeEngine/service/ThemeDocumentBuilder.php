@@ -13,9 +13,9 @@ use URPC\service\BlockIdentity;
 /** Resolves enabled JSON/provider sections and builds the theme's five-slot document. */
 final class ThemeDocumentBuilder
 {
-    public function __construct(private readonly JsonSourceCache $cache) {}
+    public function __construct(private readonly JsonSourceCache $cache, private readonly ?SidebarWidgetRegistry $widgets = null) {}
 
-    public function build(ThemeDefinition $definition, ThemePageContext $context, array $enabled): IURPCDocument
+    public function build(ThemeDefinition $definition, ThemePageContext $context, array $enabled, array $placements = []): IURPCDocument
     {
         $page = $definition->pages[$context->pageKey];
         $slots = [];
@@ -31,6 +31,9 @@ final class ThemeDocumentBuilder
                 : ($definition->sections[$slot] ?? null);
             if ($source !== null) {
                 $slots[$slot] = $this->renderSection($source, $context, $slot);
+            }
+            if (isset(SidebarWidgetSettings::SIDEBARS[$slot]) && $this->widgets !== null) {
+                $slots[$slot] = array_merge($slots[$slot], $this->widgets->render($placements[$slot] ?? [], $context, $slot));
             }
         }
 
