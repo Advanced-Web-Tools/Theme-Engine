@@ -1,8 +1,10 @@
-<h1>Save a little inspiration.</h1>
+@if(!($compactEditor ?? false))
+<h1>Theme presets</h1>
 <p class="lead mb-4">
     Presets capture theme settings, the default layout and page overrides.
-    Apply one whenever you want that look back.
+    Applying a preset replaces the saved configuration across all pages in this theme.
 </p>
+@endif
 
 @if(!$definition)
     <div class="card empty-state">
@@ -13,16 +15,21 @@
         </a>
     </div>
 @else
+    @if($compactEditor ?? false)
+        <p class="text-small text-muted">Applying a preset replaces settings and layouts for all pages.</p>
+    @endif
     <div class="card-stack content-panel">
         <form class="card" method="post" action="/dashboard/customization/save">
             @include('customization/partials/form-context.awt.php')
             <input type="hidden" name="operation" value="preset_save">
             <input type="hidden" name="tab" value="presets">
 
-            <h2 class="h4 mb-1">Remember this look</h2>
+            <h2 class="h4 mb-1">{{ ($compactEditor ?? false) ? 'New preset' : 'Remember this look' }}</h2>
+            @if(!($compactEditor ?? false))
             <span class="text-small text-muted">
             Save the current configuration of {{ $definition->label }}.
         </span>
+            @endif
 
             <div class="inline-form">
                 <input class="form-control"
@@ -40,9 +47,9 @@
             <div class="card d-flex flex-wrap align-items-center justify-content-between gap-3">
                 <div class="min-w-0">
                     <h3 class="h5 mb-1">{{ $preset['name'] }}</h3>
-                    <span class="text-small text-muted">
-                    {{ $definition->label }} preset
-                </span>
+                    @if(!($compactEditor ?? false))
+                    <span class="text-small text-muted">{{ $definition->label }} preset</span>
+                    @endif
                 </div>
 
                 <div class="form-actions m-0">

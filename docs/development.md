@@ -130,6 +130,8 @@ Activation validates the theme contract, controllers, declared JSON sources, res
 
 The source cache uses the private `COMPILED/ThemeEngine` directory, the source JSON content hash, and its logical source key. It stores normalized JSON blocks and hydrates fresh objects without PHP `unserialize()`. Source edits invalidate the corresponding entry; corrupt entries are rebuilt. An unwritable cache directory does not prevent rendering.
 
+After saving settings, layout, page overrides, restoring defaults, or applying a preset in the preview editor, the browser sends a separate authenticated POST for the existing `cache_clear` action, waits for it to finish, and then navigates the frame to its current URL with a fresh `_preview_refresh` query value. This forces a new request while retaining the current page, route parameters, fragment, and unsaved editor forms. A failed save does not clear the cache; a failed clear reports that the save succeeded but cache clearing failed.
+
 The cache excludes finished HTML, event mutations, PHP provider data, and user-specific documents. Providers and `theme_engine.page.ready` run on every render. The dashboard includes a Clear cache action.
 
 ## Customization dashboard
@@ -146,11 +148,11 @@ The Help tab uses native expandable questions for getting started, customization
 
 Cards and detail headers use `icon` and `preview_image` URLs from installed package metadata. Missing icons use the theme name's initial. Missing preview images use `assets/default_preview.webp`; failed image URLs also fall back to that asset. If the fallback fails, the image is hidden and the solid background remains.
 
-The detail page displays the description, version, author, license link, AWT compatibility range, installation date, package and activation status, dependencies, and declared routes. Dependency badges use installed versions and enablement with AWT version rules, distinguishing compatible, missing, disabled, incompatible, and uncheckable requirements. Installed dependency versions and source links are shown where available.
+The detail page displays the description, version, author, license link, AWT compatibility range, installation date, package and activation status, dependencies, and available pages. Dependency badges use installed versions and enablement with AWT version rules, distinguishing compatible, missing, disabled, incompatible, and uncheckable requirements. Installed dependency versions and source links are shown where available.
 
 ### Live previews
 
-The embedded preview renders the selected enabled theme with its saved settings and layout overrides. It does not change persistent activation or public route registration. Parameterized routes expose inputs for placeholders. Disabled packages and invalid definitions show an unavailable message.
+The Available pages list on About theme opens each page in a new tab with the standalone preview controls. About theme does not embed a live preview. The preview renders the selected enabled theme with its saved settings and layout overrides. It does not change persistent activation or public route registration. Parameterized routes expose inputs for placeholders. Disabled packages and invalid definitions show an unavailable message.
 
 The iframe uses `sandbox="allow-scripts allow-same-origin"`, preserving the site origin and dashboard session cookies during preview navigation. Links matching the selected theme's routes are rewritten into preview URLs, preserving parameters, query strings, and fragments. External links, downloads, and non-theme routes keep their original destinations.
 
@@ -164,11 +166,11 @@ Device controls resize the frame without reloading its route:
 
 Oversized frames can be scrolled horizontally. The separate preview window starts at the selected device size and has connected, icon-only 48-pixel size buttons stacked at the bottom right. Only the stack's outer top and bottom corners are rounded. Hover titles identify each device; the stack has no visible container or dimensions label. Controls sit outside the theme frame, so preview navigation retains the controls and selected size.
 
-The standalone window also has an icon-only Font Awesome settings button at the bottom left. It opens an animated floating popup with Theme settings, Layout, and Presets tabs, using the same forms as the dashboard. Layout includes theme defaults and individual page overrides. Changes take effect after Save or Apply and reload the current route inside the frame. Saving one form preserves unsaved changes in other forms; closing the popup also retains them. Applying a preset or restoring defaults asks before replacing unsaved edits. The popup supports keyboard tab navigation, Escape to close, light/dark appearance, and reduced motion.
+The standalone window also has an icon-only Font Awesome settings button at the bottom left. It opens an animated floating popup with Theme settings, Layout, and Presets tabs, using the same forms as the dashboard. Global settings and layout defaults are explicitly labeled as applying across the theme. Layout shows only the currently previewed page’s overrides and follows navigation inside the frame. Presets are labeled as theme-wide. Saving updates the stored theme configuration, including the live site when active. Changes take effect after Save or Apply and reload the current route inside the frame. Saving one form preserves unsaved changes in other forms; closing the popup also retains them. Applying a preset or restoring defaults asks before replacing unsaved edits. The popup uses the dashboard’s underline navigation tabs, flat sections separated by top rules, and distinct heading sizes. Preview forms omit repeated dashboard introductions and scope paragraphs, with wider spacing between controls and sections. Idle status text stays hidden. It supports keyboard tab navigation, Escape to close, light/dark appearance, and reduced motion.
 
 The popup uses authenticated `/dashboard/customization/themes/{package_id}/preview-settings` and POST `/dashboard/customization/themes/{package_id}/preview-settings/save` endpoints. Saves retain the existing CSRF protection and schema validation, with the route determining the theme being edited.
 
-On screens up to 1024 pixels wide or with a coarse pointer, switching is disabled and the preview fills the available screen. The embedded dashboard preview's dimensions label updates as its frame resizes.
+On screens up to 1024 pixels wide or with a coarse pointer, switching is disabled and the preview fills the available screen.
 
 ### Appearance and unsaved changes
 

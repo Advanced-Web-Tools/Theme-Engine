@@ -123,6 +123,7 @@
             body.querySelectorAll('[data-preview-tab]').forEach(button => {
                 const selected = button.dataset.previewTab === tab;
                 button.setAttribute('aria-selected', String(selected));
+                button.classList.toggle('active', selected);
                 button.tabIndex = selected ? 0 : -1;
                 if (selected && focus) button.focus();
             });
@@ -130,6 +131,25 @@
                 panel.hidden = panel.dataset.previewPanel !== tab;
             });
         };
+        const syncCurrentPage = () => {
+            const routes = body.querySelector('[data-preview-page-routes]');
+            if (!routes) return;
+            let pageKey = null;
+            try {
+                const url = new URL(frame.contentWindow.location.href);
+                const previewUrl = new URL(frame.src, window.location.href);
+                if (url.origin === previewUrl.origin && url.pathname === previewUrl.pathname) {
+                    const route = url.searchParams.get('route') || '0';
+                    pageKey = JSON.parse(routes.dataset.previewPageRoutes)[route] ?? null;
+                }
+            } catch (_) { /* Pages outside the theme have no page layout controls. */ }
+            body.querySelectorAll('[data-preview-page-key]').forEach(form => {
+                form.hidden = form.dataset.previewPageKey !== pageKey;
+            });
+            const note = body.querySelector('[data-preview-page-note]');
+            if (note) note.hidden = pageKey !== null;
+        };
+        frame.addEventListener('load', syncCurrentPage);
         const install = (html, preserved = []) => {
             const template = document.createElement('template');
             template.innerHTML = html;
@@ -144,6 +164,7 @@
             });
             body.replaceChildren(template.content);
             selectTab(activeTab);
+            syncCurrentPage();
             loaded = true;
         };
         const request = async options => {
@@ -173,7 +194,7 @@
             status.textContent = 'Loading theme settings…';
             try {
                 install(await request());
-                status.textContent = 'Changes update the preview after saving.';
+                status.textContent = '';
                 if (toggle.getAttribute('aria-expanded') === 'true') selectTab(activeTab, true);
             } catch (error) {
                 status.textContent = error.message;
@@ -195,7 +216,10 @@
         });
         body.addEventListener('click', event => {
             const tab = event.target.closest('[data-preview-tab]');
-            if (tab) selectTab(tab.dataset.previewTab);
+            if (tab) {
+                event.preventDefault();
+                selectTab(tab.dataset.previewTab);
+            }
         });
         body.addEventListener('keydown', event => {
             if (!event.target.matches('[data-preview-tab]')) return;
@@ -211,7 +235,7 @@
             const form = event.target.closest('form');
             if (form) form.classList.toggle('has-unsaved-changes', snapshot(form) !== snapshots.get(form));
             if (!busy) status.textContent = dirtyForms().length
-                ? 'Unsaved changes. Save to update the preview.' : 'Changes update the preview after saving.';
+                ? 'Unsaved changes' : '';
         };
         body.addEventListener('input', updateDirty);
         body.addEventListener('change', updateDirty);
@@ -238,12 +262,24 @@
                 install(html, preserved);
                 body.inert = false;
                 body.querySelectorAll('button[type="submit"]').forEach(button => { button.disabled = false; });
-                status.textContent = dirtyForms().length ? 'Saved. Other changes are still unsaved.' : 'Saved.';
                 if (['settings', 'reset_settings', 'layout', 'page', 'preset_apply'].includes(operation)) {
-                    // Keep the route reached inside the frame, including its parameters and fragment.
-                    try { frame.contentWindow.location.reload(); }
-                    catch (_) { frame.src = frame.src; }
+                    status.textContent = 'Clearing cache…';
+                    const clearData = new URLSearchParams({operation: 'cache_clear', _token: data.get('_token')});
+                    try {
+                        await request({method: 'POST', body: clearData});
+                    } catch (error) {
+                        throw new Error(`Saved, but cache could not be cleared: ${error.message}`);
+                    }
+                    // Navigate to a fresh URL so the restored sections appear immediately.
+                    // Keep the current page, route parameters, and fragment after preview navigation.
+                    let currentUrl = frame.src;
+                    try { currentUrl = frame.contentWindow.location.href; }
+                    catch (_) { /* An external page cannot expose its current location. */ }
+                    const refreshUrl = new URL(currentUrl, window.location.href);
+                    refreshUrl.searchParams.set('_preview_refresh', String(Date.now()));
+                    frame.src = refreshUrl.href;
                 }
+                status.textContent = dirtyForms().length ? 'Saved. Other changes are still unsaved.' : 'Saved.';
                 const savedForm = [...body.querySelectorAll('form')].find(candidate => formKey(candidate) === formKey(form));
                 if (toggle.getAttribute('aria-expanded') === 'true') {
                     (savedForm?.querySelector('button[type="submit"]') || body.querySelector('[aria-selected="true"]'))?.focus();
