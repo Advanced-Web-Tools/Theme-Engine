@@ -2,6 +2,7 @@
 
 namespace ThemeEngine\service\preview;
 
+use render\TemplateEngine\AWTBlade;
 use render\TemplateEngine\BladeOne;
 use router\security\Csrf;
 use ThemeEngine\service\Engine;
@@ -27,7 +28,9 @@ final class PreviewSettings
     {
         $theme = $this->engine->registry->get($packageId);
         $engine = $this->engine->forTheme($packageId);
-        $blade = new BladeOne($this->views, COMPILED, BladeOne::MODE_AUTO);
+        // Released framework versions before the renderer split still use BladeOne.
+        $renderer = class_exists(AWTBlade::class) ? AWTBlade::class : BladeOne::class;
+        $blade = new $renderer($this->views, COMPILED, $renderer::MODE_AUTO);
         $blade->setFileExtension('.awt.php');
         $blade->setPackageName('ThemeEngine');
         return $blade->run('preview/settings.awt.php', [
