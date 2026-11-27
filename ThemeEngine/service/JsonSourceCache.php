@@ -15,9 +15,9 @@ final class JsonSourceCache
 
     public function __construct(private readonly string $directory) {}
 
-    public function load(string $file, string $sourceKey): array
+    public function load(string $file, string $sourceKey, ?string $content = null): array
     {
-        $content = file_get_contents($file);
+        $content ??= file_get_contents($file);
         if ($content === false) {
             throw new \RuntimeException('Cannot read section source.');
         }

@@ -6,7 +6,7 @@ For a feature overview, see the [product overview](../readme.md). For integratio
 
 ## Requirements and installation
 
-Requirements: PHP 8.2 or later, MySQL/MariaDB, AWT 27 or later, URPC 1.0.0 or later, and Dashboard 1.0.0 or later. The AWT installation must provide its usual Blade and DOM extensions.
+Requirements include PHP 8.2 or later, MySQL/MariaDB, URPC 1.1.1 or later, and Dashboard 1.0.0 or later. See the package manifest for supported AWT versions. The AWT installation must provide its usual Blade and DOM extensions.
 
 1. Install and enable URPC and Dashboard.
 2. Install the ThemeEngine ZIP through the AWT package manager from the framework root:
@@ -133,7 +133,9 @@ The source cache uses the private `COMPILED/ThemeEngine` directory, the source J
 
 After saving settings, layout, page overrides, sidebar widgets, restoring defaults, or applying a preset in the preview editor, the browser sends a separate authenticated POST for the existing `cache_clear` action, waits for it to finish, and then navigates the frame to its current URL with a fresh `_preview_refresh` query value. This forces a new request while retaining the current page, route parameters, fragment, and unsaved editor forms. A failed save does not clear the cache; a failed clear reports that the save succeeded but cache clearing failed.
 
-The cache excludes finished HTML, event mutations, PHP provider data, and user-specific documents. Providers and `theme_engine.page.ready` run on every render. The dashboard includes a Clear cache action.
+URPC stores prepared public trees in the `urpc-templates` VFS pool under `<theme>/pages/<page-key>`. Edits to enabled sources, effective layout, or theme settings change the revision. Declare a PHP section with `SectionSource::provider($provider, $key, static: true)` if its output depends only on its implementation file, the stable source key, the page key and saved theme settings. Use the source key to distinguish provider configurations. ThemeEngine calculates the revision. Preview routes, PHP sources without a static declaration or readable implementation, placed sidebar widgets in visible slots, and controllers with a custom `prepareDocument()` hook build per render.
+
+`theme_engine.page.ready` and block processors run on every render. Use those hooks for session data, form values, and CSRF tokens. Dispatch `InvalidateTemplateCacheEvent` with the page namespace to force the next public render to rebuild the prepared tree.
 
 ## Customization dashboard
 
@@ -238,8 +240,7 @@ The CSS response uses `Response::file()` instead of `Response::data()`, which ac
 From the repository root:
 
 ```bash
-php tests/layout-cache.php
-php tests/sidebar-widgets.php
+php tests/template-cache.php
 ```
 
-These use an in-memory persistence fixture and temporary files, with the sibling AWT framework and URPC checkouts for their contracts and renderer. Set `AWT_FRAMEWORK_CLASSES` and `URPC_PACKAGE_ROOT` when those dependencies live elsewhere. The widget check exercises JSON persistence, theme isolation, page inheritance, empty overrides, provider output, ordering, hidden sections, presets, preview save scoping, Blade forms, lazy event registration, built-in widget output, HTML escaping, and preview navigation.
+The test uses an in-memory configuration store and a temporary VFS directory. It uses the sibling AWT framework and URPC checkouts. Set `AWT_FRAMEWORK_CLASSES` and `URPC_PACKAGE_ROOT` when those dependencies live elsewhere.

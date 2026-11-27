@@ -1,6 +1,6 @@
 {
   "name": "ThemeEngine",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "minimum_awt_version": "27.2.0",
   "maximum_awt_version": "27.3.0",
   "author": "ElStefanos",
@@ -14,8 +14,8 @@
   "dependencies": [
     {
       "name": "URPC",
-      "version": ">=1.0.0",
-      "url": "https://github.com/ElStefanos/URPC/releases/download/1.0.0/URPC-1.0.0.zip"
+      "version": ">=1.1.1",
+      "url": "https://github.com/ElStefanos/URPC/releases/download/1.1.1/URPC-1.1.1.zip"
     },
     {
       "name": "Dashboard",

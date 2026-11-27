@@ -11,6 +11,7 @@ final class SectionSource
         public readonly ?string $file,
         public readonly ?ISectionProvider $provider,
         public readonly ?string $key,
+        public readonly bool $static = false,
     ) {}
 
     public static function json(string $relativeFile): self
@@ -18,11 +19,12 @@ final class SectionSource
         return new self($relativeFile, null, null);
     }
 
-    public static function provider(ISectionProvider $provider, string $stableKey): self
+    /** A static provider uses its implementation, key, page key and saved theme settings as inputs. */
+    public static function provider(ISectionProvider $provider, string $stableKey, bool $static = false): self
     {
         if (trim($stableKey) === '') {
             throw new \InvalidArgumentException('Provider source key is required.');
         }
-        return new self(null, $provider, $stableKey);
+        return new self(null, $provider, $stableKey, $static);
     }
 }
