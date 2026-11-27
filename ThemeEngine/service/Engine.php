@@ -17,6 +17,7 @@ final class Engine
     private ?ThemeRecord $active = null;
     private ?ThemeDefinition $definition = null;
     private bool $loadedDispatched = false;
+    private bool $preview = false;
     public ?string $loadError = null;
     public readonly SidebarWidgetRegistry $widgets;
 
@@ -101,7 +102,9 @@ final class Engine
 
     public function forPreview(int $packageId): self
     {
-        return $this->forTheme($packageId);
+        $selected = $this->forTheme($packageId);
+        $selected->preview = true;
+        return $selected;
     }
 
     public function announceLoaded(): void
@@ -231,7 +234,20 @@ final class Engine
         });
     }
 
-    public function createDocument(ThemePageContext $context): IURPCDocument
+    public function prepareDocumentCache(ThemePageContext $context): ?array
+    {
+        if ($this->preview || $context->theme->packageId !== $this->activeTheme()->packageId) {
+            return null;
+        }
+        return (new ThemeDocumentBuilder($this->cache, $this->widgets))->cacheInputs(
+            $this->definition(),
+            $context,
+            $this->sectionsFor($context->pageKey),
+            $this->widgetsFor($context->pageKey),
+        );
+    }
+
+    public function createDocument(ThemePageContext $context, ?array $cacheInputs = null): IURPCDocument
     {
         if ($context->theme->packageId !== $this->activeTheme()->packageId) {
             throw new \LogicException('Page belongs to an inactive theme.');
@@ -240,8 +256,9 @@ final class Engine
         return (new ThemeDocumentBuilder($this->cache, $this->widgets))->build(
             $this->definition(),
             $context,
-            $this->sectionsFor($context->pageKey),
-            $this->widgetsFor($context->pageKey),
+            $cacheInputs['enabled'] ?? $this->sectionsFor($context->pageKey),
+            $cacheInputs === null ? $this->widgetsFor($context->pageKey) : [],
+            $cacheInputs['files'] ?? [],
         );
     }
 

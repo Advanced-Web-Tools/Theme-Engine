@@ -12,18 +12,25 @@ abstract class ThemePage extends URPC
     protected Engine $themeEngine;
     protected string $pageKey;
     protected array $pageData = [];
+    private ?ThemeDocumentProvider $themeDocumentProvider = null;
 
     public function configureTheme(Engine $engine, string $pageKey): void
     {
         $this->themeEngine = $engine;
         $this->pageKey = $pageKey;
-        $this->setDocumentProvider(new ThemeDocumentProvider($engine, $this));
+        $this->themeDocumentProvider = new ThemeDocumentProvider($engine, $this);
+        $this->setDocumentProvider($this->themeDocumentProvider);
         $this->setSourceNamespace($engine->activeTheme()->name . '/pages/' . $pageKey);
     }
 
     public function render(): string
     {
-        return '<!doctype html>' . parent::render();
+        try {
+            return '<!doctype html>' . parent::render();
+        } finally {
+            // A cache hit skips createDocument(), so release its source snapshot here too.
+            $this->themeDocumentProvider?->clearCacheInputs();
+        }
     }
 
     public function pageContext(): ThemePageContext
