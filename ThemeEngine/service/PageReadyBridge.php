@@ -23,8 +23,10 @@ final class PageReadyBridge implements IEventListener
         $ready = new PageReadyEvent($event->getDocument(), $page->pageContext(), $page);
         $this->dispatcher->dispatch($ready);
 
-        // A listener may mutate the document in place or replace it entirely.
-        $event->setDocument($ready->getDocument());
+        // Apply shared browser metadata to the live document after theme listeners have run.
+        $document = $ready->getDocument();
+        $page->applySiteAppearance($document);
+        $event->setDocument($document);
         return [];
     }
 }

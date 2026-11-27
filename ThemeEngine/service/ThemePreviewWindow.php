@@ -11,6 +11,8 @@ final class ThemePreviewWindow
         'mobile' => [390, 844],
     ];
 
+    public function __construct(private readonly ?SiteAppearance $appearance = null) {}
+
     public function render(string $themeName, string $previewUrl, string $device = 'desktop', ?string $settingsUrl = null): string
     {
         if (!isset(self::DEVICES[$device])) {
@@ -19,7 +21,11 @@ final class ThemePreviewWindow
         [$width, $height] = self::DEVICES[$device];
         $widthCss = is_int($width) ? $width . 'px' : $width;
         $heightCss = is_int($height) ? $height . 'px' : $height;
-        $title = htmlspecialchars($themeName . ' · Preview', ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
+        $appearance = $this->appearance?->settings();
+        $title = SiteAppearance::title($appearance['title_format'] ?? 'theme', 'Preview') ?? ($themeName . ' · Preview');
+        $title = htmlspecialchars($title, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
+        $favicon = SiteAppearance::faviconUrl($appearance['favicon'] ?? null);
+        $favicon = $favicon === null ? null : htmlspecialchars($favicon, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
         $url = htmlspecialchars($previewUrl, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
         $settingsUrl = $settingsUrl === null ? null : htmlspecialchars($settingsUrl, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
         $devices = self::DEVICES;

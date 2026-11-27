@@ -9,6 +9,11 @@ interface IStore
 
     public function saveState(array $state): void;
 
+    public function siteAppearance(): array;
+
+    /** Merge the supplied keys into the shared site appearance atomically. */
+    public function updateSiteAppearance(array $changes): void;
+
     public function config(int $packageId): array;
 
     public function saveConfig(int $packageId, array $config): void;

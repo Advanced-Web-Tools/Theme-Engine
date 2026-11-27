@@ -1,50 +1,53 @@
-<header class="navbar border-bottom">
+<header class="theme-customization-header border-bottom">
     <div class="container">
-        <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 py-2">
-            <div class="navbar-brand">
-                Customization
-            </div>
+        <div class="theme-customization-bar">
+            <div class="navbar-brand">Customization</div>
 
-            <div class="d-inline-flex align-items-center gap-1 text-small">
-                <span class="status-dot" aria-hidden="true"></span>
-                {{ $selectedTheme ? $selectedTheme->name : ($engine->hasActiveTheme() ? $engine->definition()->label : 'No active theme') }}
-            </div>
+            @if(!$selectedTheme)
+                <div class="theme-status">
+                    @if($engine->hasActiveTheme())
+                        <span class="status-dot" aria-hidden="true"></span>
+                        <span>Active theme: {{ $engine->definition()->label }}</span>
+                    @else
+                        <span>No active theme</span>
+                    @endif
+                </div>
+            @endif
         </div>
 
         @if($selectedTheme)
             <div class="theme-hero">
-                <img class="theme-hero-image" data-preview-fallback="/dashboard/customization/default-preview.webp" src="{{ $selectedTheme->previewImage ?: '/dashboard/customization/default-preview.webp' }}" alt="">
                 <div class="theme-hero-content">
                     <a class="theme-back" href="/dashboard/customization?tab=themes"><i class="fa-solid fa-arrow-left fa-fw" aria-hidden="true"></i> All themes</a>
                     <div class="theme-heading">
-                        <div class="avatar-tile theme-icon-large" aria-hidden="true">
+                        <div class="avatar-tile" aria-hidden="true">
                             @if($selectedTheme->icon)
                                 <img src="{{ $selectedTheme->icon }}" alt="">
                             @else
-                                {{ strtoupper(substr($selectedTheme->name,0,1)) }}
+                                {{ strtoupper(substr($selectedTheme->name, 0, 1)) }}
                             @endif
                         </div>
                         <div>
                             <h1>{{ $selectedTheme->name }}</h1>
                             @if($engine->hasActiveTheme() && $engine->activeTheme()->packageId === $selectedTheme->packageId)
-                                <span class="badge">Active theme</span>
+                                <span class="theme-status"><span class="status-dot" aria-hidden="true"></span> Active theme</span>
                             @elseif(!$selectedTheme->enabled)
-                                <span class="badge badge-muted">Package disabled</span>
+                                <span class="theme-status">Package disabled</span>
                             @else
-                                <span class="badge badge-muted">Available</span>
+                                <span class="theme-status">Available</span>
                             @endif
                         </div>
                     </div>
                 </div>
+                <img class="theme-hero-image" data-preview-fallback="/dashboard/customization/default-preview.webp" src="{{ $selectedTheme->previewImage ?: '/dashboard/customization/default-preview.webp' }}" alt="">
             </div>
         @endif
 
         <nav class="nav-tabs" aria-label="Customization">
-            @foreach(['themes'=>'Themes','layout'=>'Layout','settings'=>'Theme settings','widgets'=>'Widgets','presets'=>'Presets','help'=>'Help'] as $key=>$label)
-                <a href="{{ $customizationUrl }}?tab={{ $key }}"
+            @foreach(['themes'=>'Themes','site'=>'Site appearance','layout'=>'Layout','settings'=>'Theme settings','widgets'=>'Widgets','presets'=>'Presets','help'=>'Help'] as $key=>$label)
+                <a href="{{ $key === 'site' ? '/dashboard/customization' : $customizationUrl }}?tab={{ $key }}"
                    class="{{ $tab === $key ? 'active' : '' }}"
                    @if($tab === $key) aria-current="page" @endif>
-                    <i class="fa-solid {{ $selectedTheme && $key === 'themes' ? 'fa-circle-info' : ['themes'=>'fa-palette','layout'=>'fa-table-columns','settings'=>'fa-sliders','widgets'=>'fa-cubes-stacked','presets'=>'fa-bookmark','help'=>'fa-circle-question'][$key] }} fa-fw" aria-hidden="true"></i>
                     {{ $selectedTheme && $key === 'themes' ? 'About theme' : $label }}
                 </a>
             @endforeach

@@ -9,6 +9,8 @@ use ThemeEngine\service\contracts\IStore;
 /** JSON persistence for site activation, per-theme configuration and presets. */
 final class DatabaseStore implements IStore
 {
+    private const SITE_APPEARANCE_ID = 2;
+
     public function __construct(private readonly ITransactionalProvider $db) {}
 
     public function state(): array
@@ -22,6 +24,32 @@ final class DatabaseStore implements IStore
         $this->write('UPDATE theme_engine_state SET payload = :payload WHERE id = 1', [
             ':payload' => json_encode($state, JSON_THROW_ON_ERROR),
         ]);
+    }
+
+    public function siteAppearance(): array
+    {
+        return $this->readSiteAppearance();
+    }
+
+    public function updateSiteAppearance(array $changes): void
+    {
+        $this->transaction(function () use ($changes): void {
+            $args = [':id' => self::SITE_APPEARANCE_ID];
+            $this->write(
+                "INSERT INTO theme_engine_state (id, payload) VALUES (:id, '{}') ON DUPLICATE KEY UPDATE id = id",
+                $args,
+            );
+            $appearance = array_replace($this->readSiteAppearance(lock: true), $changes);
+            $this->write('UPDATE theme_engine_state SET payload = :payload WHERE id = :id',
+                $args + [':payload' => json_encode($appearance, JSON_THROW_ON_ERROR)]);
+        });
+    }
+
+    private function readSiteAppearance(bool $lock = false): array
+    {
+        $row = $this->row('SELECT payload FROM theme_engine_state WHERE id = :id' . ($lock ? ' FOR UPDATE' : ''),
+            [':id' => self::SITE_APPEARANCE_ID]);
+        return $row ? json_decode($row['payload'], true, 512, JSON_THROW_ON_ERROR) : [];
     }
 
     public function config(int $packageId): array

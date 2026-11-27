@@ -23,6 +23,7 @@ use ThemeEngine\service\Engine;
 use ThemeEngine\service\JsonSourceCache;
 use ThemeEngine\service\LayoutBuilder;
 use ThemeEngine\service\PageReadyBridge;
+use ThemeEngine\service\SiteAppearance;
 use ThemeEngine\service\ThemeDocumentProvider;
 use ThemeEngine\service\ThemePreview;
 use ThemeEngine\service\ThemeRegistry;
@@ -106,6 +107,7 @@ function check(bool $condition, string $message): void
 $work = sys_get_temp_dir() . '/theme-engine-cache-' . bin2hex(random_bytes(8));
 mkdir($work, 0700);
 define('DATA', $work . '/');
+define('WEB_NAME', 'Site & Co');
 session_start(['save_path' => $work, 'use_cookies' => 0, 'cache_limiter' => '']);
 try {
     file_put_contents($work . '/theme.php', '<?php return new TemplateTestTheme();');
@@ -120,9 +122,13 @@ try {
     $writeSource('header', 'first-header');
 
     $store = new class implements IStore {
+        private array $state = ['active_theme_package_id' => 1];
         private array $config = ['settings' => []];
-        public function state(): array { return ['active_theme_package_id' => 1]; }
-        public function saveState(array $state): void {}
+        private array $appearance = [];
+        public function state(): array { return $this->state; }
+        public function saveState(array $state): void { $this->state = $state; }
+        public function siteAppearance(): array { return $this->appearance; }
+        public function updateSiteAppearance(array $changes): void { $this->appearance = array_replace($this->appearance, $changes); }
         public function config(int $packageId): array { return $this->config; }
         public function saveConfig(int $packageId, array $config): void { $this->config = $config; }
         public function presets(int $packageId): array { return []; }
@@ -163,6 +169,7 @@ try {
     $_SESSION['receipt'] = 'first-receipt';
     $firstToken = (new Csrf())->regenerate();
     $first = $page->index(['item' => 'first-form'])->render();
+    check(str_contains($first, '<title>Home · Fixture</title>'), 'Existing installations keep the theme title by default.');
     check($sourceWasLoaded() && is_array($entry()), 'A cold render builds and writes the prepared tree.');
     check(is_file(DATA . 'storage/framework/cache/urpc-templates/' . hash('sha256', $namespace) . '.php'), 'The tree is persisted in the VFS pool.');
     foreach (['first-source', 'first-header', 'first-receipt', 'first-form', 'ready-first-form', $firstToken] as $value) {
@@ -184,6 +191,41 @@ try {
         check(str_contains($second, $value), 'A hit still renders fresh ' . $value);
     }
     check(!str_contains($second, $firstToken) && !str_contains($second, 'first-form'), 'The hit has no previous request values.');
+
+    $eventDispatcher->addListener(PageReadyEvent::NAME, new class implements IEventListener {
+        public function handle(IEvent $event): array
+        {
+            $root = array_values($event->getDocument()->getSections()['layout'])[0];
+            $head = array_values($root->getBlockChildren())[0];
+            $head->addBlockChild(LayoutBuilder::block('link', '', ['rel' => 'shortcut icon', 'href' => '/theme.ico']));
+            return [];
+        }
+    });
+    $store->updateSiteAppearance(['favicon' => ['hash' => 'fixture-icon', 'mime' => 'image/png']]);
+    $engine->appearance->save('site_pipe_page', null, false);
+    $customized = $page->render();
+    $favicon = SiteAppearance::FAVICON_PATH . '?v=fixture-icon';
+    check(str_contains($customized, '<title>Site &amp; Co | Home</title>'), 'The global title is escaped and rendered on cache hits.');
+    check(str_contains($customized, $favicon) && !str_contains($customized, '/theme.ico'), 'The global favicon replaces the theme favicon.');
+    check(!$sourceWasLoaded() && serialize($entry()) === $cached, 'The site appearance stays out of the prepared tree.');
+    $registry->register(new ThemeRecord(2, 'OtherFixture', $work, '1.0.0', true));
+    $inactivePreview = (new ThemePreview($engine))->render(2, 0, ['item' => 'inactive-preview']);
+    check(str_contains($inactivePreview, '<title>Site &amp; Co | Home</title>') && str_contains($inactivePreview, $favicon),
+        'The inactive theme preview uses the same site appearance.');
+    foreach ([
+        'site_dash_page' => 'Site &amp; Co - Home',
+        'site_dot_page' => 'Site &amp; Co · Home',
+        'page_dot_site' => 'Home · Site &amp; Co',
+        'site_slash_page' => 'Site &amp; Co / Home',
+        'page_slash_site' => 'Home / Site &amp; Co',
+    ] as $format => $title) {
+        $engine->appearance->save($format, null, false);
+        check(str_contains($page->render(), '<title>' . $title . '</title>'), 'The selected title format renders correctly.');
+    }
+    $engine->appearance->save('page_dash_site', null, true);
+    $customized = $page->render();
+    check(str_contains($customized, '<title>Home - Site &amp; Co</title>'), 'Changing the title format updates the next render.');
+    check(!str_contains($customized, $favicon) && str_contains($customized, '/theme.ico'), 'Removing the favicon restores the theme favicon.');
 
     $writeSource('header', 'other-header');
     check(str_contains($page->render(), 'other-header') && $sourceWasLoaded(), 'Changing shared JSON rebuilds the tree.');
@@ -243,6 +285,14 @@ try {
     $document = $provider->createDocument($context);
     $blocks = array_values(LayoutBuilder::findSlot($document, 'content')->getBlockChildren());
     check($blocks[0]->getBlockContent() === 'other-source', 'A miss builds from the exact source used to calculate the revision.');
+
+    $store->updateSiteAppearance(['favicon' => ['hash' => 'fixture-icon', 'mime' => 'image/png']]);
+    $engine->activate(2);
+    $engine->boot();
+    $switched = $newPage()->index(['item' => 'switched-theme'])->render();
+    check($engine->activeTheme()->packageId === 2 && str_contains($switched, $favicon)
+        && str_contains($switched, '<title>Home - Site &amp; Co</title>'), 'Changing the active theme preserves the site appearance.');
+
     unlink($work . '/home.json');
     check($provider->getDocumentCacheRevision($context) === null, 'An unavailable JSON source disables caching.');
 

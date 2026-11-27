@@ -5,6 +5,7 @@ namespace ThemeEngine\service\customization;
 use ThemeEngine\api\ThemeDefinition;
 use ThemeEngine\api\ThemeRecord;
 use ThemeEngine\service\Engine;
+use ThemeEngine\service\SiteAppearance;
 use ThemeEngine\service\ThemePreview;
 
 /** Keeps site activation separate from the theme being inspected or edited. */
@@ -35,6 +36,7 @@ final class CustomizationViewData
         }
 
         $canEdit = $editingEngine?->hasActiveTheme();
+        $appearance = $tab === 'site' ? $this->engine->appearance->settings() : [];
         return [
             'engine' => $this->engine,
             'tab' => $tab,
@@ -53,7 +55,21 @@ final class CustomizationViewData
             'globalWidgets' => $canEdit ? $editingEngine->globalWidgets() : [],
             'pageWidgets' => $canEdit ? $editingEngine->pageWidgetOverrides() : [],
             'presets' => $canEdit ? $editingEngine->presets() : [],
+            'titleFormats' => SiteAppearance::TITLE_FORMATS,
+            'titleFormat' => $appearance['title_format'] ?? 'theme',
+            'faviconUrl' => SiteAppearance::faviconUrl($appearance['favicon'] ?? null),
+            'titleExamples' => $tab === 'site' ? $this->titleExamples() : [],
         ];
+    }
+
+    private function titleExamples(): array
+    {
+        $default = $this->engine->hasActiveTheme() ? 'Page · ' . $this->engine->definition()->label : 'Page';
+        $examples = [];
+        foreach (array_keys(SiteAppearance::TITLE_FORMATS) as $format) {
+            $examples[$format] = SiteAppearance::title($format, 'Page') ?? $default;
+        }
+        return $examples;
     }
 
     private function themesWithActiveFirst(): array

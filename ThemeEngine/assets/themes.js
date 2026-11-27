@@ -101,6 +101,57 @@
         updateScreen();
     }
 
+    function initializeSiteAppearancePreview() {
+        const preview = document.querySelector('[data-theme-site-preview]');
+        const form = document.getElementById('theme-site-appearance-form');
+        if (!preview || !form) return;
+
+        const formats = form.elements.namedItem('title_format');
+        const upload = form.elements.namedItem('favicon');
+        const remove = form.elements.namedItem('remove_favicon');
+        const title = preview.querySelector('[data-site-preview-title]');
+        const icon = preview.querySelector('[data-site-preview-icon]');
+        const fallbackIcon = preview.querySelector('[data-site-icon-fallback]');
+        let uploadedIcon = '';
+
+        const showIcon = visible => {
+            icon.hidden = !visible;
+            fallbackIcon.hidden = visible;
+        };
+        icon.addEventListener('load', () => showIcon(true));
+        icon.addEventListener('error', () => showIcon(false));
+
+        const updateTab = () => {
+            title.textContent = formats.selectedOptions[0].dataset.previewTitle;
+            title.title = title.textContent;
+            const url = uploadedIcon || (remove?.checked ? '' : preview.dataset.savedIcon);
+            if (url === (icon.getAttribute('src') ?? '')) return;
+            showIcon(false);
+            if (url) icon.setAttribute('src', url);
+            else icon.removeAttribute('src');
+        };
+
+        const updateFile = () => {
+            if (uploadedIcon) URL.revokeObjectURL(uploadedIcon);
+            const file = upload.files[0];
+            uploadedIcon = file ? URL.createObjectURL(file) : '';
+            updateTab();
+        };
+
+        formats.addEventListener('change', updateTab);
+        upload.addEventListener('change', () => {
+            if (upload.files.length && remove) remove.checked = false;
+            updateFile();
+        });
+        remove?.addEventListener('change', () => {
+            if (remove.checked) upload.value = '';
+            updateFile();
+        });
+        form.addEventListener('reset', () => queueMicrotask(updateFile));
+        if (icon.complete && icon.getAttribute('src')) showIcon(icon.naturalWidth > 0);
+        updateFile();
+    }
+
     function initializePreviewSettings() {
         const popup = document.getElementById('theme-preview-settings-popup');
         const toggle = document.getElementById('theme-preview-settings-toggle');
@@ -341,13 +392,14 @@
     function initializeUnsavedChanges() {
         const indicator = document.getElementById('theme-unsaved-indicator');
         const actions = indicator?.querySelector('[data-unsaved-actions]');
-        const trackedOperations = new Set(['settings', 'layout', 'page', 'widgets', 'page_widgets', 'preset_save']);
+        const trackedOperations = new Set(['site_appearance', 'settings', 'layout', 'page', 'widgets', 'page_widgets', 'preset_save']);
         const snapshots = new Map();
         const dirtyForms = new Set();
         const saveButtons = new Map();
         let submittingForm = null;
 
-        const snapshot = form => JSON.stringify([...new FormData(form).entries()]);
+        const snapshot = form => JSON.stringify([...new FormData(form)].map(([key, value]) =>
+            [key, value instanceof File ? [value.name, value.size] : value]));
         const updateForm = form => {
             if (snapshot(form) === snapshots.get(form)) dirtyForms.delete(form);
             else dirtyForms.add(form);
@@ -399,6 +451,7 @@
     initializeAppearanceSync();
     initializeImageFallbacks();
     initializePreview();
+    initializeSiteAppearancePreview();
     initializePreviewSettings();
     initializeSidebarWidgets();
     initializeUnsavedChanges();

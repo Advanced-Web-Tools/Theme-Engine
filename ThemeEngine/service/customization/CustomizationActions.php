@@ -11,6 +11,10 @@ final class CustomizationActions
     public function apply(Engine $engine, CustomizationInput $input): void
     {
         switch ($input->operation()) {
+            case 'site_appearance':
+                $engine->appearance->save($input->string('title_format'), $input->upload('favicon'),
+                    $input->checked('remove_favicon'));
+                break;
             case 'activate':
                 $engine->activate($input->positiveId('package_id'));
                 break;

@@ -20,6 +20,7 @@ final class Engine
     private bool $preview = false;
     public ?string $loadError = null;
     public readonly SidebarWidgetRegistry $widgets;
+    public readonly SiteAppearance $appearance;
 
     public function __construct(
         public readonly ThemeRegistry $registry,
@@ -29,6 +30,7 @@ final class Engine
         ?SidebarWidgetRegistry $widgets = null,
     ) {
         $this->widgets = $widgets ?? new SidebarWidgetRegistry($dispatcher);
+        $this->appearance = new SiteAppearance($store);
     }
 
     public static function defaultState(): array

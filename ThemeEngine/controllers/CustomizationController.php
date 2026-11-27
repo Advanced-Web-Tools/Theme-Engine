@@ -43,6 +43,10 @@ final class CustomizationController extends DashboardControllerBase
     public array $themeRoutes;
     public ?string $themeError;
     public ?string $previewUrl;
+    public array $titleFormats;
+    public string $titleFormat;
+    public ?string $faviconUrl;
+    public array $titleExamples;
 
     public function __construct(private readonly Engine $themeEngine)
     {
@@ -95,12 +99,12 @@ final class CustomizationController extends DashboardControllerBase
     {
         // Router enforces POST and CSRF; the constructor enforces dashboard authentication.
         $this->viewName = 'customization';
-        $input = new CustomizationInput($_GET, $_POST);
+        $input = new CustomizationInput($_GET, $_POST, $_FILES);
         $selectedTheme = null;
 
         try {
             $engine = $this->themeEngine;
-            if ($input->hasThemeSelection()) {
+            if ($input->operation() !== 'site_appearance' && $input->hasThemeSelection()) {
                 $selectedTheme = $engine->registry->get($input->positiveId('theme_id'));
                 if (!in_array($input->operation(), ['activate', 'cache_clear'], true)) {
                     $engine = $engine->forTheme($selectedTheme->packageId);
