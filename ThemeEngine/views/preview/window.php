@@ -4,6 +4,9 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title><?= $title ?></title>
+    <?php if ($favicon !== null): ?>
+        <link rel="icon" href="<?= $favicon ?>">
+    <?php endif; ?>
     <script src="/dashboard/customization/preview-theme.js"></script>
     <link rel="stylesheet" href="/dashboard/customization/fontawesome/css/all.min.css">
     <link rel="stylesheet" href="/dashboard/customization/themes.css">

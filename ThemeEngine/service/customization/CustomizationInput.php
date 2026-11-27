@@ -5,11 +5,12 @@ namespace ThemeEngine\service\customization;
 /** Validates HTTP fields without coupling customization services to PHP globals. */
 final class CustomizationInput
 {
-    public const TABS = ['themes', 'layout', 'settings', 'widgets', 'presets', 'help'];
+    public const TABS = ['themes', 'site', 'layout', 'settings', 'widgets', 'presets', 'help'];
 
     public function __construct(
         private readonly array $query,
         private readonly array $post,
+        private readonly array $files = [],
     ) {}
 
     public function tab(): string
@@ -48,6 +49,20 @@ final class CustomizationInput
             throw new \InvalidArgumentException('Invalid field: ' . $key);
         }
         return $value;
+    }
+
+    public function upload(string $key): ?array
+    {
+        $file = $this->files[$key] ?? null;
+        if ($file !== null && !is_array($file)) {
+            throw new \InvalidArgumentException('Invalid file upload.');
+        }
+        return $file;
+    }
+
+    public function checked(string $key): bool
+    {
+        return ($this->post[$key] ?? null) === '1';
     }
 
     public function positiveId(string $key): int

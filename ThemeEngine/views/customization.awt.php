@@ -4,14 +4,16 @@
     <link rel="stylesheet" href="/dashboard/customization/fontawesome/css/all.min.css">
     <link rel="stylesheet" href="/dashboard/customization/themes.css">
 
-    <div>
+    <div class="theme-customization">
         @include('customization/partials/header.awt.php')
 
-        <div class="py-5 theme-customization-content">
+        <div class="theme-customization-content">
             <div class="container">
                 @include('customization/partials/notices.awt.php')
 
-                @if($tab === 'help')
+                @if($tab === 'site')
+                    @include('customization/tabs/site.awt.php')
+                @elseif($tab === 'help')
                     @include('customization/tabs/help.awt.php')
                 @elseif($selectedTheme && $themeError && $tab !== 'themes')
                     <div class="alert alert-danger" role="alert">This theme cannot be customized: {{ $themeError }}</div>

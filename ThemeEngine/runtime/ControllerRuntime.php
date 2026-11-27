@@ -6,6 +6,7 @@ use context\Context;
 use object\ObjectFactory;
 use runtime\api\RuntimeControllerAPI;
 use ThemeEngine\controllers\CustomizationController;
+use ThemeEngine\controllers\FaviconController;
 use ThemeEngine\controllers\ThemePage;
 use ThemeEngine\service\Engine;
 
@@ -25,6 +26,11 @@ final class ControllerRuntime extends RuntimeControllerAPI
             ->addMethodCall('setViewPath')
             ->addMethodArgs('setViewPath', ['/views/']);
         $this->addController($factory, 'customization');
+        $this->addController(
+            (new ObjectFactory())->setClassName(FaviconController::class)
+                ->setType(FaviconController::class)->setConstructorArgs([$engine->appearance]),
+            'favicon',
+        );
 
         // Public controllers receive their theme package context, not the engine's package context.
         $pages = [];

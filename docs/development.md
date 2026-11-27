@@ -55,7 +55,7 @@ The organization refactor preserves existing public/protected signatures, route 
 | `ThemeLoaderRuntime` | Loads installed type-2 packages into the registry, loads the active `theme.php`, publishes the shared engine, and registers `PageReadyBridge`. |
 | `ControllerRuntime` | Prepares the dashboard factory and the active theme's page factories. |
 | `DashboardRouterRuntime` | Registers customization GET routes, POST actions, and asset routes. |
-| `PublicRouterRuntime` | Registers the active theme's declared public routes and dispatches `theme_engine.theme.loaded`. |
+| `PublicRouterRuntime` | Registers the public favicon endpoint and the active theme's declared routes, then dispatches `theme_engine.theme.loaded` when a theme is active. |
 
 A theme should declare its public page routes through `theme.php` rather than registering them again in `main.php`. The theme's package runtime may register services, block processors, event listeners, and other service routes.
 
@@ -78,7 +78,7 @@ A `PageDefinition` has a stable key, such as `article`, shared by URLs such as `
 
 Ordinary AWT/Blade views use `.awt.php`. Public `ThemePage` rendering uses JSON/PHP providers; the dashboard uses Blade. ThemeEngine does not convert HTML or Blade templates into URPC blocks.
 
-Public `ThemePage` output includes the HTML5 doctype. The document title uses the page and theme names.
+Public `ThemePage` output includes the HTML5 doctype. By default the title uses the page and theme names. A site-wide title format builds the title from the page label and `WEB_NAME`. Shared browser metadata is applied after page-ready listeners, so changes take effect on the next render even when the prepared page is cached.
 
 ## Five-section layout
 
@@ -115,7 +115,7 @@ Register `theme_engine.theme.loaded` listeners before `PublicRouterRuntime` runs
 
 | Table | Stored data |
 | --- | --- |
-| `theme_engine_state` | One row, `id=1`: active theme ID and legacy site-wide section visibility. |
+| `theme_engine_state` | Row `id=1` stores the active theme ID and legacy site-wide section visibility. Row `id=2` stores shared browser title and favicon settings when saved. |
 | `theme_engine_settings` | One row per `package_id`: theme settings, default section visibility, page overrides, and sidebar widget placements. |
 | `theme_engine_presets` | Package-specific presets, each with a name and a complete configuration snapshot. |
 
@@ -139,7 +139,9 @@ URPC stores prepared public trees in the `urpc-templates` VFS pool under `<theme
 
 ## Customization dashboard
 
-`/dashboard/customization` offers Themes, Layout, Theme settings, Widgets, Presets, and Help tabs. `CustomizationController` enforces dashboard authentication and permission level 1. Save actions are POST-only and use AWT CSRF protection. Successful saves use POST-redirect-GET to avoid repeated submissions on refresh.
+`/dashboard/customization` offers Themes, Site appearance, Layout, Theme settings, Widgets, Presets, and Help tabs. `CustomizationController` enforces dashboard authentication and permission level 1. Save actions are POST-only and use AWT CSRF protection. Successful saves use POST-redirect-GET to avoid repeated submissions on refresh.
+
+Site appearance is available before a theme is activated. Upload, replace, or remove a shared favicon and select a browser tab title format. The browser tab preview beside the form shows the selected favicon and an example title as you edit. The settings apply to every theme and its preview and persist when the active theme changes. The public favicon endpoint at `/theme-engine/favicon` includes a content hash in the icon URL so updated icons have a new URL.
 
 Theme cards open `/dashboard/customization/themes/{package_id}`. The active theme appears first and spans the collection width. Detail pages keep About theme, Layout, Theme settings, Widgets, and Presets scoped to the selected package. Enabled inactive themes can be configured before activation. Forms, redirects, and validation errors retain that package's context. Disabled or invalid themes explain why editing is unavailable.
 

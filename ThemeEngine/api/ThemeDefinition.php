@@ -3,6 +3,7 @@
 namespace ThemeEngine\api;
 
 use ThemeEngine\service\SettingsSchema;
+use ThemeEngine\service\SiteAppearance;
 
 /** Validated declaration returned by an installed theme's ITheme implementation. */
 final class ThemeDefinition
@@ -49,7 +50,8 @@ final class ThemeDefinition
             }
             $path = rtrim($route->path, '/') ?: '/';
             if ($path === '/dashboard' || str_starts_with($path, '/dashboard/')
-                || $path === '/storage' || str_starts_with($path, '/storage/')) {
+                || $path === '/storage' || str_starts_with($path, '/storage/')
+                || $path === SiteAppearance::FAVICON_PATH) {
                 throw new \InvalidArgumentException('Theme route uses a reserved path.');
             }
 

@@ -5,6 +5,7 @@ namespace ThemeEngine\controllers;
 use ThemeEngine\service\Engine;
 use ThemeEngine\service\ThemeDocumentProvider;
 use ThemeEngine\api\ThemePageContext;
+use URPC\api\contracts\IURPCDocument;
 use URPC\service\renderer\URPC;
 
 abstract class ThemePage extends URPC
@@ -37,6 +38,11 @@ abstract class ThemePage extends URPC
     {
         return new ThemePageContext($this->getContext() ?? throw new \LogicException('Page requires AWT Context.'),
             $this->themeEngine->activeTheme(), $this->pageKey, $this->themeEngine->settings(), $this->pageData);
+    }
+
+    public function applySiteAppearance(IURPCDocument $document): void
+    {
+        $this->themeEngine->appearance->apply($document, $this->themeEngine->definition()->pages[$this->pageKey]->label);
     }
 
     public function index(array|string $params = []): self
